@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
-import { config } from './config';
+import { config } from '@root/config';
 import Logger from 'bunyan';
+import { redisConnection } from '@service/redis/redis.connection';
 
 const log: Logger = config.createLogger('setupDatabase');
 
@@ -20,6 +21,7 @@ mongoose.connection.on: listening to the connection, if it's disconnected then c
       .connect(`${config.DATABASE_URL}`)
       .then(() => {
         log.info('Connection to database successful!');
+        redisConnection.connect();
       })
       .catch((error) => {
         log.error('Error connecting to database', error);
