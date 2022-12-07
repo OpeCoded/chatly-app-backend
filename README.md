@@ -1,5 +1,10 @@
 # SOCIAL NETWORK MERN - UZOCHUKWU EDDIE ODIZI
 
+# MY TERMS
+
+A constructor is a special function that creates and initializes an object instance of a class. In JavaScript, a constructor gets called when an object is created using the new keyword.
+
+
 
 #  INTRODUCTION 
 
@@ -361,19 +366,394 @@ git push -u origin main
 So, on your github project create 2 new branches: development, staging
 Set the development branch as default
 
-Switch to development branch: git checkout development
+Switch to development branch: 
+git fetch
+git checkout development
 
 
+# CHANGE ABSOLUTE IMPORTS
+
+We want to change paths for our imports to use absolute paths e.g @shared/routes.ts
+
+Install these two libraries: npm i ttypescript typescript-transform-paths
+- ttypescript module: we'll use to build our typescript app instead of the tsc command, else we'll get errors while building our app because we changed our paths to absolute
+- typescript-transform-paths module: will help us to transform the absolute paths we created to regular paths in our build file
+Goto tsconfig.json, add a plugins: key. Add typescript-transform-paths in the objects
+Add a paths: key, in here we specify our absolute paths. Note: "@root/*" path should be the last in the object
+
+Goto previous files you've create and put the absolute paths in use by changing the import paths 
+
+
+# BUILD SCRIPT
+
+We want to add the build command to build our app
+
+Goto .gitignore, .eslintignore add build
+Goto package.json, in the scripts object add a new command/key "build". This will help us to convert our project from typescript to javascript
+Run npm run build: to build our app
+
+
+# 4. BACKEND AUTHENTICATION FEATURE
+
+
+# REDIS COMMAND
+
+- Redis datatypes
+
+Strings
+Lists
+Sets: an unordered list of data
+Hashes: are objects, with fields (keys) and values
+Sorted Sets: ordered or grouped list of data
+
+- Redis Commands
+
+List Commands 
+
+LPUSH : prepends values at the beginning of a list (Left)
+LRANGE: used to get a range of elements from a list
+LINDEX: gets an element from a list by its index
+LLEN: gets the length of a list
+LREM: removes an element from a list
+LSET: sets the value of an element in a list by it's index
+RPUSH: appends one or more values to a list from the Right
+
+*started making screenshots from here
+
+
+
+# CLOUDINARY UPLOAD FUNCTION 
+
+Login to your cloudinary dashboard
+Copy your cloudname, api key and api secret.
+Add them to you .env file AND config.ts (class and constructor) file
+
+Install cloudinary: npm install cloudinary
+Goto config.ts, Import cloudinary 
+Create a method cloudinaryConfig
+Goto app.ts, inside the loadConfig(), call cloudinaryConfig()
+
+Inside src > shared > globals > helpers, create a file cloudinary-upload.ts
+Import cloudinary, UploadApiResponse , UploadApiErrorResponse
+Create a function uploads()
+
+
+# AUTH VALIDATION SCHEMES
+
+- Validation schemas for sign up and password reset
+- Joivalidation module for form validation 
+- * later, we'll create a TS decorator, based on the decorator our validations will be performed based on the data sent through the request body 
+
+Install Joi: npm i joi
+In the features dir, create a new dir auth
+
+Inside the auth dir create the following dir:
+
+controllers: this will contain the business logic
+interfaces: is like a contract of how the data you want to define or the data you're expecting should look like
+models: model for mongoDB
+routes: routes/urls for auth
+schemes: schemes for validation during sign up
+
+In the schemes dir, create files signup.ts, signin.ts (copy and paste the file provided)
+
+
+# JOI VALIDATOR DECORATOR
+A decorator is like a spacial declaration that can be attached to a class/method
+
+- We want to create a typescript decorator that will be used to perform validations using joi validation module. In this case to validate our req.body properties
+
+Create a new branch for our auth-feature: git checkout -b feature/auth-feature [everything related to auth will be in this branch]
+Inside src > shared > globals create a decorators dir 
+
+Inside the decorators dir, create a file joi-validation.decorators.ts
+Import JoiRequestValidationError, Request, ObjectSchema
+
+Create a type IJoiDecorator
+Create a func joiValidation
+
+
+# AUTH INTERFACE AND MODEL SCHEMA (dir: scr/features/auth)
+
+We want to create our interfaces and model user authentication features
+
+Create a file auth.interface.ts in the interfaces dir
+Copy and paste the file you were provided with 
+
+Goto you tsconfig.ts file and define the absolute path for auth in the paths {}
+Create a file auth.schema.ts in the models dir
+Copy and paste the file you were provided with 
+
+Install bycryptjs: npm i bcryptjs
+Install it's file declaration type: npm i --save-dev @types/bcryptjs
+
+# SIGN UP USER METHOD PART 1 (SignUp Controller)
+
+We want to create a method to create a user > add the user to redis cache > save the user to MongoDB
+
+Install modules: npm i jsonwebtoken lodash
+Install their types: npm i --save-dev @types/jsonwebtoken @types/lodash
+
+Create a file signup.ts in features/auth/controllers
+Import ObjectID (mongodb id to be saved to the db), request and response
+Create a class SignUp, inside the class create a method create()
+
+- To check if a username and email already exist we need to create a service
+
+Create a file auth.service.ts in shared > services > db
+Create a class AuthService, create a method getUserByUsernameOrEmail
+
+Create a file helpers.ts in src > shared > globals > helpers
+
+
+# SIGN UP USER METHOD PART 2 (SignUp Controller)
+
+Create a method signUpData
+
+# AUTH ROUTES
+
+Create a file authRoutes.ts in features/auth/routes
+Import the required
+Create a class AuthRoutes
+Goto project routes.ts file, Create var BASE_PATH
+Add the authRoute to the route()
+
+Use Rest Client VSCode extension to test the endpoint:
+Create a dir endpoints in the root of the project
+Create a file auth.http in it (this will house all endpoints for our authentication requests)
+
+Define baseUrl and urlPath
+Define a post req to create a user
+
+Start your redis server, mongo db and run your app
+Click send request in the auth.http file
+If your req was successful, you picture would be uploaded to cloudinary
+
+
+# USER INTERFACE AND MODEL SCHEMA
+
+How users created would be saved to mongo db in terms of data types
+
+Create a dir user in the features dir
+Inside the user dir, create dirs models, interfaces
+
+Create a file user.interface.ts in the interfaces dir 
+Copy and paste the file you're provided with 
+
+Create a file user.schema.ts in the model dir 
+Copy and paste the file you're provided with 
+
+
+# REDIS BASE CLASS
+We want to save frequently used/accessd data by users in our app in the redis-cache to speed up data retrieval instead of waiting for data to be fetched from the db, so we want to setup our redis connection 
+
+Goto shared > services > redis
+Create a file base.cache.ts, Import the required
+Create a class BaseCache
+Create a file redis.connection.ts, Import the required
+Create a class RedisConnection
+Goto setupDatabase.ts, call redisConnection.connect(); in the .then()
+
+Run your app: you should have Redis connection: PONG in the log
+
+
+# SAVE USER TO REDIS CACHE PART 1
+
+Create a file user.cache.ts in the redis dir
+Import BaseCache
+Creat a class UserCache
+Create a method saveUserToCache
+
+
+# SAVE USER TO REDIS CACHE PART 2
+
+Goto signup.ts in the controllers dir
+Create a method userData
+Create an instance of UserCache() on top of the file
+In the create(), call saveUserToCache(..pass in args) to add user to redis cache
+
+
+# INSTALL REDIS COMMANDER (GUI FOR REDIS)
+
+Install: npm install -g redis-commander
+Ensure redis-server is running on your machine
+Run: redis-commander in terminal
+Start your app: npm run dev
+Using your endpoint auth.http req file, try to create a new user and check if it's in redis db
+
+
+# BASE MESSAGE QUEUE
+
+We want to create queues and workers which will be used in sending data to our mongodb
+
+Queue => Worker => MongoDB
+
+Bull is used to create  queues and workers
+Install bull: npm install bull --save
+Install bull GUI modules: npm i @bull-board/express @bull-board/ui
+
+Create a file base.queue.ts in the services/queues dir
+Import the required
+Create vars bullAdapters, serverAdapter
+Create a class BaseQueue
 
  
+ # BASE QUEUE ADD JOB METHOD
+
+Methods to add data to the queue and process jobs inside the queue
+
+Create a method addJob(), processJob()
+Goto routes.ts, add the /queues basepath to the routes(). This will allow us to see our jobs in the Bull GUI
+Before testing, create atleast a queue
+
+Create a file auth.queue.ts in the shared > services > queues dir
+Create a class AuthQueue, 
+Goto base.queue.ts, create a type IBaseJobData
+Pass the IBaseJobData as data: in the addJob()
+Goto signup.ts in the controllers dir
+Import omit, use omit() to remove props we don't want to save to the mongo db
+Use authQueue.addAuthUserJob (AuthQueue class) to add the user data created to the queue as a job
+Cmd: npm run dev
+Goto Bull Dashboard: localhost:5000/queues
 
 
+# AUTH QUEUE AND WORKER
+- Use the auth queue for explanations
+
+We want to create a worker that will process the jobs, send it to a method that will add the data to mongodb
+
+- Saving a user to cache 
+
+Create a file auth.worker.ts in the shared > workers dir
+Import the required
+Create a class AuthWorker, Create a method addAuthUserToDB()
+Goto auth.service.ts, create a method createAuthUser
+Goto auth.worker.ts call createAuthUser() in the addAuthUserToDB()
+Goto auth.queue.ts, in the constructor() call the processJob() and passing the required values
+
+- Saving a user to mongodb 
+
+Create a file user.worker.ts in the workers dir (you can duplicate the auth.worker.ts and make changes) 
+
+Create a file user.service.ts in service > db dir
+Create a class UserService
+Goto user.worker.ts,  call userService.addUserData in the addUserToDB()
+Create a file user.queue.ts in the shared > services > queues dir (you can duplicate the auth.queue.ts)
+Goto controllers > signup.ts, call userQueue.addUserJob() in the create method
 
 
+# ADD JWT TO SESSION
+
+We want to add JWT using our session using cookie session module
+
+Goto signup.ts (controller)
+Create a method signToken(), Import JWT
+In the create() create a var userJwt, req.session
 
 
+# VIEW MONGO DB DATA WITH COMPASS
+
+Run your request to create a new user in the auth.http file
+Check your mongodb compass, you will see you db has been created with the name you specified in your .env file for DB_URL
+You will have to collections Auth and User, the Auth is contains auth credentials, while the user contains the user bio data but the authId is referencec in the User collection
 
 
+# USER LOGIN CONTROLLER
+- Note: this looks like the signup section, so check sign up comments for explanations
+
+We want to implement the sign in / login feature
+
+Goto feature > auth > controllers 
+Create a file signin.ts, create a class SignIn
+Create a method read(), import the required
+Create a method getAuthUserByUsername in auth.service.ts
+Goto authRoutes.ts, create the signin route in the routes()
+Goto auth.http, create a request for signin pointing to /signin route
+Test it
+
+# FIX LOGIN BUG
+
+Initially we're passing the id of a user in the Auth collection to userId while signing JWT which is wrong, so we want to pass the actual id created in the User collection in MongoDB
+
+Goto user.service.ts, Create a method getUserByAuthId()
+Goto signin.ts, create a var user, pass it to JWT.sign()
+
+# UPDATE LOGIN CONTROLLER
+
+Goto singin.ts, create a var const userDocument: IUserDocument, pass userDocument in the res.status() for user
 
 
+# USER LOGOUT CONTROLLER
+
+Create a file signout.ts in features > auth > controllers
+Import the required
+Create a class SignOut, create method update()
+Goto authRoutes.ts, Create a method signoutRoute()
+Goto routes.ts (root), create the base path for signoutRoute()
+- To test:
+Goto auth.http, create a get req pointing to the /signout route
+
+
+# GET USER DATA FROM REDIS CACHE
+
+We want to create a controller to check if the current user is a valid user and has a valid user token
+
+We need 2 methods: Method to get the user data from the cache (using HGETALL)
+- hgetall users:638cf42cf6ac60372572885c
+And the other method, from the database
+
+Note: while saving data to the cache, we stringify them using JSON.stringify, so we need to convert them back to json using json.parse
+
+Goto globals > helpers > helper.ts
+Create a method parseJson()
+Goto user.cache.ts, create a method getUserFromCache()
+
+
+# GET USER FROM MONGODB BY ID PART 1
+
+Goto shared > services > db > user.service.ts
+Create a method getUserById()
+
+
+# GET USER FROM MONGODB BY ID PART 2
+
+Continued - getUserById()
+Create a method aggregateProject()
+
+
+# CURRENT USER CONTROLLER
+
+Create a file current-user.ts in features > auth > controllers
+Create a class CurrentUser
+Create a file currentRoute.ts in controllers > routes
+Create a class CurrentUserRoutes
+Goto the root routes.ts file, create a base path for /currentuser route
+
+
+# AUTHENTICATION MIDDLEWARE
+
+We want to create 2 middleware methods to set the currentUser value or payload (auth.interface.ts) i.e init value
+
+First middleware verify if the user token (JWT) is valid before an auth req is being sent: verifyUser()
+Second middleware verifies if the currentUser actually exists: checkAuthentication()
+
+Create a file auth-middleware.ts in the globals > helpers dir
+Import the required
+Create a class AuthMiddleWare
+Create a method verifyUser()
+Goto currentRoute.ts, add authMiddleware.checkAuthentication in the route path for ocurrentuser
+Goto routes.ts (root), add authMiddleware.verifyUser to the currentUserRoutes base path
+Goto auth.php file, test the /sigin,  /currentuser endpoints respectively
+
+
+# MERGE FEATURE BRANCH TO DEVELOP
+
+We want to push what we have done so far (our code), create a pull request and merge it to development.
+
+Run the below CMDs:
+
+npm run lint:check => This checks for lint errors
+npm run prettier:check
+npm run prettier:fix => This fixes all prettier errors
+git add .
 

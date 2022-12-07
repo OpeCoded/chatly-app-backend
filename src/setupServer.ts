@@ -15,15 +15,12 @@ import cookieSession from 'cookie-session';
 import HTTP_STATUS from 'http-status-codes';
 import 'express-async-errors';
 import Logger from 'bunyan';
-import { config } from './config';
+import { config } from '@root/config';
 import { Server } from 'socket.io';
 import { createClient } from 'redis';
 import { createAdapter } from '@socket.io/redis-adapter';
-import applicationRoutes from './routes';
-import {
-  CustomError,
-  IErrorResponse,
-} from './shared/globals/helpers/error-handler';
+import applicationRoutes from '@root/routes';
+import { CustomError, IErrorResponse } from '@global/helpers/error-handler';
 
 /*
 app: this is an instance of our express application, with it's constructor. Which will be passed to app.ts
@@ -142,7 +139,9 @@ export class ChattyServer {
       const socketIO: Server = await this.createSocketIO(httpServer);
       this.startHttpServer(httpServer);
       this.socketIOConnections(socketIO);
-    } catch (error) {}
+    } catch (error) {
+      log.error('');
+    }
   }
 
   /*
@@ -176,5 +175,8 @@ export class ChattyServer {
     });
   }
 
-  private socketIOConnections(io: Server): void {}
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private socketIOConnections(io: Server): void {
+    log.info('socketIOConnections');
+  }
 }

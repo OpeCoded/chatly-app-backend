@@ -1,15 +1,15 @@
 import express, { Express } from 'express';
-import { ChattyServer } from './setupServer';
-import databaseConnection from './setupDatabase';
-import { config } from './config';
+import { ChattyServer } from '@root/setupServer';
+import databaseConnection from '@root/setupDatabase';
+import { config } from '@root/config';
 
 class Application {
-  /* 
+  /*
     TYPESCRIPT SYNTAX EXPLANATION
     const app: Express = express();
     VARIABLE: TYPE = VALUE;
 
-    CLASS/METHOD TO START OUR APPLICATION 
+    CLASS/METHOD TO START OUR APPLICATION
     initialize(): initializes/start/run our Application
     app: instance of Express server
     server: instance of our ChattyServer class
@@ -29,12 +29,13 @@ class Application {
 
   private loadConfig(): void {
     config.validateConfig();
+    config.cloudinaryConfig();
   }
 }
 
-/* 
+/*
 applicaton: instance of the Application class above
-initialize: initialize/starts our application 
+initialize: initialize/starts our application
 */
 const application: Application = new Application();
 application.initialize();
