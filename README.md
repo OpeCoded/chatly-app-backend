@@ -450,8 +450,8 @@ In the features dir, create a new dir auth
 Inside the auth dir create the following dir:
 
 controllers: this will contain the business logic
-interfaces: is like a contract of how the data you want to define or the data you're expecting should look like
-models: model for mongoDB
+interfaces: Interface is used for validating the structure (model) of an entity. An interface defines the syntax that any entity (e.g user, post) must adhere to. It's like a contract of how the data you want to define or the data you're expecting should look like.  
+models: This is the structure of an entity (i.e a collection/table) - for mongoDB
 routes: routes/urls for auth
 schemes: schemes for validation during sign up
 
@@ -480,8 +480,8 @@ We want to create our interfaces and model user authentication features
 Create a file auth.interface.ts in the interfaces dir
 Copy and paste the file you were provided with 
 
-Goto you tsconfig.ts file and define the absolute path for auth in the paths {}
-Create a file auth.schema.ts in the models dir
+Goto you tsconfig.ts file and define the absolute path for auth in the paths {} which will be used when importing
+Create a file auth.schema.ts in the models dir (auth collection)
 Copy and paste the file you were provided with 
 
 Install bycryptjs: npm i bcryptjs
@@ -526,7 +526,7 @@ Define baseUrl and urlPath
 Define a post req to create a user
 
 Start your redis server, mongo db and run your app
-Click send request in the auth.http file
+Send a request to the /signup endpoint in auth.http file
 If your req was successful, you picture would be uploaded to cloudinary
 
 
@@ -756,4 +756,201 @@ npm run lint:check => This checks for lint errors
 npm run prettier:check
 npm run prettier:fix => This fixes all prettier errors
 git add .
+git commit -m "Feature: Implemented Auth Feature"
+git push origin feature/auth-feature => Creates a new branch "feature/auth-feature" NB: deny any prompt that comes
+Visit the PR (Pull Request) link generated in the cmd i.e https://github.com/OpeCoded/chatly-app-backend/pull/new/feature/auth-feature
+Click on Create PR > Merge Confirm
 
+
+
+# BACKEND AUTH PASSWORD RESET
+
+# MAIL TRANSPORT CLASS
+
+We want to create methods that would be used to send emails on production and local development with different libraries for each.
+
+Nodemailer (local)
+Sendgrid (production)
+ejs (email templating engine)
+
+
+Switch to or create a new branch: git checkout -b feature/password-reset-feature
+Install modules to send email: npm i nodemailer @sendgrid/mail ejs
+Install the type declarations of the above
+
+Goto .env and create the following keys:
+SENDER_EMAIL
+SENDER_EMAIL_PASSWORD
+SENDGRID_API_KEY
+SENDGRID_SENDER
+
+Goto config.ts and define the properties of the above keys 
+
+Create a file mail.transport.ts in shared > services > email
+Import the required
+Create an interface IMailOptions
+Create a class MailTransport
+Goto nodemailer.com/about to copy the required methods (reference)
+
+
+# TEST DEV EMAIL SENDER
+
+Goto ethereal.email to create an ethereal account in order to have a sender email and password
+Paste the credentials in your .env file where appropriate
+Start your server in cmd and run your app
+
+- We want to test the developmentEmailSender while signing up (signin.ts controller)
+
+Goto signin.ts, call mailTransport.sendEmail() after signing userJwt. Pass in 3 required args (sender email, subject, body)
+- Note: use a wifi incase you're not receiving an email or try another network. Cus you have to be on the same network as the smtp server.
+Goto auth.http , test your signin endpoint and see if an email would drop in the ethereal.email inbox
+
+
+# EMAIL QUEUE AND WORKER
+
+Objective: Add email (job) to queue => Worker then send the email
+
+Create a file email.queue.ts in the queues dir
+Create a class EmailQueue
+Create a method addEmailJob, add it's interface to the BaseQueue (base.queue.ts)
+Create email.worker.ts in the workers dir
+Create a class EmailWorker
+Goto email.queue.ts, call processJob()
+
+
+# PASSWORD RESET TEMPLATES
+
+Create a dir templates in service > emails
+Create two dirs forgot-password, reset-password in the templates dir
+Inside the forgot-password dir create a file forgot-password-template.ts and forgot-password-template.ejs
+Copy and paste the snippets provided for forgot-password-template.ejs
+
+Goto forgot-password-template.ts, Import the required
+Create a class ForgotPasswordTemplate
+
+Inside the reset-password dir create a file reset-password-template.ts and reset-password-template.ejs
+Copy and paste the snippets provided for reset-password-template.ejs
+
+
+# TEST EMAIL WITH PASSWORD RESET TEMPLATES
+
+Goto signin.ts, create a var resetLink
+Create a var template
+Call emailQueue.addEmailJob()
+
+- Test sending the email using your signin.ts controller. NOTE: to test, update the sender email and pass in your .env with the one you've sepecified for receiver. Else it won't deliver
+
+For confirmation email after password has been changed
+Install the following: npm i moment ip
+Import them in signin.ts
+Create a var templateParams
+Call emailQueue.addEmailJob. Note: you can create a separate job for confirmation email but we used the addEmailJob
+
+
+# FORGOT PASSWORD CONTROLLER METHOD
+
+Create a file password.ts in the auth > controllers dir
+Import the required
+Create a class Password
+Create a method create()
+Create a method getAuthUserByEmail(), updatePasswordToken() in auth.service.ts
+Goto authRoutes.ts, add /forgot-password and /reset-password/:token route to the routes()
+
+
+# RESET PASSWORD CONTROLLER METHOD
+
+This method will change the password and send a confirmation email that the user's password was changed
+
+Goto password.ts
+Create a method update()
+- We want to check if the passwordRequestToken has not expired and if passwordResetToken exists
+Goto a auth.service.ts, create a method getAuthUserByPasswordToken()
+Goto authRoutes.ts, create a route for reset-password and pass the token param
+Testing: Create a new request for routes /forgot-password and /reset-password in the auth.http file
+Test the 2 new endpoints, copy token sent to the email and add it to the request to change the password
+
+
+# JEST CONFIG
+
+We want to setup our unit test using Jest, we'll be testing only our controller methods
+
+Install Jest: npm install --save-dev jest
+Install Jest types: npm i @types/jest, npm i @jest/types, npm i -D ts-jest
+
+Create a file jest.config.ts in the root of the project
+Import the required
+Create a var config
+
+
+# UNIT TEST SCRIPT COMMAND
+
+Goto package.json, add "test" key to the scripts object
+
+# AUTH UNIT TEST MOCK
+
+PURPOSE OF TESTING: to check if we're getting the expected/correct response
+
+- Test for sign up, we're going to be mocking data to be used for our tests, we won't be using real data from the DB. 
+
+Create a dir test in the controllers dir
+In the src dir, create a dir mocks
+In the mocks dir, create a file auth.mock.ts - In here, we will mock our request and response data for sign up
+Import the required
+Create a func authMockRequest
+Create a func authMockResponse
+
+
+# SIGN UP UNIT TEST P1
+
+We want to test if some required credentials values are not supplied when a user is trying to signup
+
+Create a file signup.test.ts in the controllers > test dir 
+Import the required
+Create a jest describe()
+To test, run: npm run test [this runs all test files in your source file]
+
+
+# SIGN UP UNIT TEST P2
+
+Use the it() to create other tests like we did above in part 1
+
+
+# CLEAR MOCKS
+
+We want to reset our mocks test before another test runs and clear all mocks after a test has finished
+
+Goto signup.test.ts
+Create a method beforeEach() in the describe()
+Call resetAllMocks() inside it
+Create a method afterEach()
+Run npm run test [with the path of the test file]
+
+
+# LOGIN UNIT TEST
+
+We want to create a test for our sign.ts controller method
+
+Create a file signin.test.ts in the test dir
+Copy and paste the snippet provided
+Run npm run test [with the path of the test file]
+
+
+# PASSWORD RESET & LOGOUT UNIT TEST
+
+Create a file password.test.ts, signout.test.ts in the test dir
+Copy and paste the snippet provided
+Run npm run test [with the path of the test file] to run individual test
+
+
+# CURRENT USER UNIT TEST
+
+Create a file user.mock.ts in the mocks dir
+
+Create a file current-user.test.ts, signout.test.ts in the test dir
+Copy and paste the snippet provided
+Run npm run test [with the path of the test file] to run individual test
+
+
+# PUSH CODE TO GITHUB
+
+git add .
