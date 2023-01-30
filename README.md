@@ -1185,4 +1185,5 @@ Copy and past the snippet code provided
 
 git add .
 git commit -m "feat: added post features"
+git push origin feature/post-feature
 git push
