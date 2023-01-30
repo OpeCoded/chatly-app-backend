@@ -954,3 +954,232 @@ Run npm run test [with the path of the test file] to run individual test
 # PUSH CODE TO GITHUB
 
 git add .
+git commit -m "feature: implemented password reset feature with unit tests"
+
+
+
+# BACKEND POST FEATURE
+
+
+# SECTION INTRODUCTION
+
+
+# POST INTERFACE, MODEL AND SCHEMA
+
+Create a dir post in the feature dir
+Add the path to the post dir to tsconfig.json, jestconfig.ts
+Create the following dirs in the post dir controllers, interfaces, models, routes, schemes
+Create a file post.interface.ts in post > interfaces dir
+Create a file post.schema.ts in the post > models dir
+- Copy and paste the snippets provided in the files above
+
+Note: for schemas, you only add index: true to a field you're sure you're going to use to make a queries (i.e primary key)
+
+# POST JOI VALIDATION SCHEME
+
+Create a file post.schemes.ts in post > schemes dir
+Copy and paste the snippet provided
+
+- Note: we'll have 2 controllers for post upload. 
+1. Post without image. 
+2. Post with image
+
+
+# SOCKECT IO POST HANDLER
+
+We want to setup socketIO connection 
+For immediate response from the server when a user makes a post
+
+Create a file post.ts in shared > sockets
+Import the required
+Create a class SocketIOPostHandler
+
+Goto setupServer.ts, inside socketIOconnections(), create a var postSocketHandler
+
+
+# CREATE POST CONTROLLER METHOD
+
+Create a file create-post.ts in post > controllers
+Import the required
+Create two method post, postWithImage
+
+
+# SAVE POST TO REDIS CACHE
+
+We want to save posts inside redis as a hash
+
+Create a file post.cache.ts in shared > services > redis dir 
+Import the required
+Create a class PostCache
+Create a method savePostToCache
+
+
+# USE savePostToCache() inside create-post.ts controller
+
+Goto create-post.ts
+Create a var postCache
+In the post(), call postCache.savePostToCache() and pass in the req args to be saved in the cache
+Create a file postRoutes.ts in the post > routes dir
+Create a class PostRoutes
+Goto to the root routes.ts file and create a base path for postRoutes
+TESTING:
+Ensure you sign in a user before testing
+Create a file posts.http in the endpoints dir
+Send a request to this endpoint: POST {{baseUrl}}/{{urlPath}}/post
+
+
+# ADD POST SOCKECT IO EVENT
+
+We want to emit posts events in our post controller
+
+Goto creat-post.ts, call socketIOPostObject.emit() in the post()
+
+
+# POST QUEUE AND WORKER
+
+Create a file post.queue.ts in service > queues
+Create a class PostQueue
+Add IPostJobData to the base queue
+Create a file post.worker.ts in the workers dir
+Create a class PostWorker
+Create a file post.service.ts in the services dir
+Create a class PostService
+Createa a method addPostToDB
+Goto post.worker.ts, call postService.addPostToDB inside the savePostToDB()
+Goto create-post.ts controller, call postQueue.addPostJob() inside the post()
+
+
+# POST WITH IMAGE CONTROLLER METHOD
+
+Goto create-post.ts
+Create a method postWithImage()
+Goto postRoutes.ts, create a route for post/image/post
+
+
+# CREATE POST UNIT TEST
+ 
+Create a file post.mock.ts in the mocks dir
+Copy and paste the snippet provided
+Create a dir test in the post > controller dir
+Create a file create-post.test.ts
+Copy and paste the snippet provided
+
+
+# GET POST FROM REDIS CACHE
+
+We want to create methods to fetch get multiple posts, single posts etc
+
+Post fetching: redis > mongodb
+
+Goto post.cache.ts
+Create a method getPostsFromCache()
+
+
+# GET TOTAL POST COUNT FROM CACHE
+
+Goto post.cache.ts
+Export a type PostCacheMultiType
+
+
+Create getTotalPostsInCache(), getPostsWithImagesFromCache(), getUserPostsFromCache()
+
+
+# GET POST FROM MONGODB
+
+Create a method getPosts(), postsCount()
+
+
+# GET POST CONTROLLER 
+
+Create a file get-posts.ts in controllers > post 
+Import the required 
+Create an instance of PostCache
+Create a class Get
+Create a method post(), postWithImages()
+
+
+# GET POSTS ROUTES
+
+Goto postRoutes.ts
+Create get routes Get.prototype.posts, Get.prototype.postsWithImages
+
+Goto post.http to test the endpoint Post get
+
+# GET POST CONTROLLER UNIT TEST
+
+Create a file get-post.test.ts in post > controller > test
+Copy and paste the snippet provided
+Run: npm run test <file-path>
+
+
+
+# DELETE POST CONTROLLER 
+
+We want to create a method to delete a post from redis cache for a particular user
+We're going to delete the item from the set and hash
+
+
+Goto post.cache.ts
+Create a method deletePostFromCache()
+Goto post.service.ts
+Create a method deletePost()
+Goto post.worker.ts
+Create a method deletePostFromDB()
+Goto post.queue.ts, add the job method deletePostFromDB() to the PostQueue class
+
+Create a file delete-post.ts in the post > controller dir
+Import the required
+Create a class Delete
+Create a method post()
+
+Goto postRoutes.ts
+Create a route delete()
+
+Test in post.http
+
+
+# DELETE POST CONTROLLER UNIT TEST
+
+Create a file delete-post.test.ts in post > controller > test
+Copy and paste the snippet provided
+Run cmd: npm run test <file-path>
+
+
+# UPDATE POST IN REDIS CACHE
+
+Goto post.cache.ts
+Create a method updatePostInCache()
+
+
+# UPDATE POST CONTROLLER 
+
+Goto post.service.ts
+Create method editPost()
+Goto post.worker.ts 
+Create a method updatePostInDB()
+Goto post.queue.ts
+Add a job updatePostInDB to the queue
+Create a file update-post.ts in post > controllers dir
+
+
+# UPDATE POST WITH IMAGE CONTROLLER
+
+Goto update-post.ts
+Create a method postWithImage()
+Create a private method updatePostWithImage(), addImageToExistingPost
+Goto postRoutes.ts, create routes to update ordinary post and post with image i.e /post/image/:postId
+
+Test in the posts.http
+
+
+# UPDATE POST CONTROLLER UNIT TEST
+
+Create a file update-post.test.ts in post > controllers > test
+
+Copy and past the snippet code provided
+
+<NOTE: in testing, ensure the status response in the controller tallies with the one in the test.ts file, else the test will fail
+
+
+# PUSH CODE TO GITHUB
+
