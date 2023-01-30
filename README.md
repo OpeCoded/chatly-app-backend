@@ -1183,3 +1183,5 @@ Copy and past the snippet code provided
 
 # PUSH CODE TO GITHUB
 
+git add .
+git commit -m "feat: added post features"
