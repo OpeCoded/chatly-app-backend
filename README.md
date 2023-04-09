@@ -1183,8 +1183,9 @@ Copy and past the snippet code provided
 
 # PUSH CODE TO GITHUB
 
+git checkout -b feature/post-feature
 git add .
-git commit -m "feat: added post features"
+git commit -m "feature: added post features"
 git push origin feature/post-feature
 git push
 
@@ -1194,3 +1195,174 @@ git push
 Goto tsconfig.json
 Change the value of the rootDir to "." instead of "scr"
 
+
+
+# NEW VIDEOS ADDED TO THE COURSE
+
+# SECTION 3
+
+# Update dependencies
+
+- We want to update the libraries in package.json file, remove the ones not needed anymore.
+
+Run npm update
+
+Install package bullmq: npm i bullmq
+
+# Update build script
+
+ttypescript package converts an alias path to it's relative path, we want to use a better one which is tsc-alias.
+
+npm uninstall ttypescript
+npm install --save-dev tsc-alias
+Update your package.json with this:   "build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
+Run npm run build
+ * check your build folder, you'd notice the tsc-alias package replaced alias paths (@user/) with relative paths (./../) after typescript compilation
+
+
+
+ # SECTION 6
+
+
+ # Update redis HSET method in post cache
+
+HSET takes in 3 args in the new version of redis
+HSET('key', 'field', 'value')
+
+Convert your dataToSave from an array to an object, then loop through it to get each itemKey and itemValue then save to cache
+
+
+
+# BACKEND POST REACTIONS FEATURE
+
+
+# Reaction interface, model schema and joi schemes.
+
+Create a new branch: git checkout -b feature/post-reactions-feature
+Create a dir reactions in the features dir
+Create the following dirs in the reactions dir: controllers, interfaces, models, routes, schemes.
+
+Create respective files using the snippet provided for interfaces, models and schemes
+Add the paths to the reaction feature in your tsconfig.json and jest.config.ts file
+
+
+# Add post reaction to cache
+
+Create a file reaction.cache.ts in services > redis
+Create a method savePostReactionToCache()
+
+# Remove post reaction from redis cache
+
+Create a method removePostReactionFromCache()
+
+
+# Add reaction controller
+
+Create a file add-reactions.ts reactions > controllers dir
+Create a class Add {}
+Create a method reaction()
+Create an instance of ReactionCache
+
+Create a file reactionRoutes.ts in the reactions > routes dir 
+Create a class ReactionRoute{}
+Add reactionRoutes to the the base routes.ts file
+
+Test the route in your endpoint
+Create a file reactions.http
+Test the post endpoint
+
+
+# Fix add reaction issue
+
+helpers.ts file parseJson()
+Add this: return JSON.parse(prop);
+
+
+# Add post reaction to mongodb
+
+Create a file reaction.service.ts in db dir
+Create a class ReactionService
+Create a method addReactionDataToDB()
+
+# Post reaction queues and worker
+
+Create a method removeReactionDataFromDB()
+
+Create a new file reaction.queue.ts in the queues dir
+Create a method addReactionJob()
+Add IReactionJob to the base.queue.ts file
+Create a file reaction.workers.ts in the workers dir
+Create class ReactionWorker
+Create a method addReactionToDB(), removeReactionFromDB()
+
+Create a fresh post and try to add reaction to it
+Test in your reaction.http endpoint
+Check your redis and DB to ensure all works
+
+
+# Fix add reaction to mongodb error
+
+While creating our reactioinObject in add-reactions.ts, we're creating our own reaction id where as mongodb will also create another one for us. So by the time a user wants to update his/her reaction a new reaction id is being created which causes conflict.
+
+_id: new ObjectId()
+
+- solution:
+
+Goto reaction.service.ts
+Import omit 
+
+
+# Remove reaction controller
+
+Create a new file remove-reation.ts in the controllers dir
+Create a class Remove
+Create a delete route in the reactionRoutes.ts
+
+Create your DELETE endpoint in the reactions.http file for testing
+
+
+# Add and Remove reaction controllers unit test
+
+* Hint: test files gives you an overview of what data or values is being processed by your controller
+
+Create a file reactions.mock.ts in the mocks dir
+Copy and paste the snippet code provided
+Create a file add-reactions.test.ts, remove-reactions.test.ts in features > reactions > controllers > test dir
+Run npm run test <test-file-path>
+
+# Get post reactions from redis cache and MongoDB
+
+Goto reaction.cache.ts
+Create a method getReactionsFromCache()
+getSingleReactionByUsernameFromCache()
+
+
+# Get post reactions from mongoDB
+
+Goto reaction.service.ts
+Create a method getPostReactions()Create a method getSinglePostReactionByUsername()Create a method getReactionsByUsername()
+
+
+# Get reactions controller
+
+Create a file get-reactions.ts in feature > reactions > controllers dir
+Create a class Get
+Create a method reactions()
+Create a method singleReactionByUsername(), reactionsByUsername()
+
+
+# Get reactions routes
+
+Add all the get routes in reactionRoutes.ts
+
+Test the endpoint in your reactions.http
+
+
+# Get reactions controller unit test
+
+Create a file get-reactions.test.ts
+Copy and paste the snippet provided
+
+Run: npm run test <test-file-path>
+
+# Push code to github

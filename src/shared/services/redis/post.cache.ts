@@ -5,18 +5,17 @@ import { ServerError } from '@global/helpers/error-handler';
 import {
   ISavePostToCache,
   IPostDocument,
-  IReactions,
 } from '@post/interfaces/post.interface';
 import { Helpers } from '@global/helpers/helpers';
 import { RedisCommandRawReply } from '@redis/client/dist/lib/commands';
+import { IReactions } from '@reaction/interfaces/reaction.interface';
+
 
 /*
 For ref: check user.cache.ts
-
 Note: for the PostCache class, we're not creating it's instance immeidately here like we've always be doing. It's better to create the instance of classes right inside the controller in which we want to use them.
-
+dataToSave: object containing field: value data to be saved to the post cache
 savePostToCache: saves a post to the cache
-
 Inside the try block, after this.client.connect(): we're adding data to the cache
 postCount: string[]: getting the current number of posts the user have posted from cache
  */
@@ -57,61 +56,43 @@ export class PostCache extends BaseCache {
       createdAt,
     } = createdPost;
 
-    const firstList: string[] = [
-      '_id',
-      `${_id}`,
-      'userId',
-      `${userId}`,
-      'username',
-      `${username}`,
-      'email',
-      `${email}`,
-      'avatarColor',
-      `${avatarColor}`,
-      'profilePicture',
-      `${profilePicture}`,
-      'post',
-      `${post}`,
-      'bgColor',
-      `${bgColor}`,
-      'feelings',
-      `${feelings}`,
-      'privacy',
-      `${privacy}`,
-      'gifUrl',
-      `${gifUrl}`,
-    ];
+    const dataToSave = {
+      _id: `${_id}`,
+      userId: `${userId}`,
+      username: `${username}`,
+      email: `${email}`,
+      avatarColor: `${avatarColor}`,
+      profilePicture: `${profilePicture}`,
+      post: `${post}`,
+      bgColor: `${bgColor}`,
+      feelings: `${feelings}`,
+      privacy: `${privacy}`,
+      gifUrl: `${gifUrl}`,
+      commentsCount: `${commentsCount}`,
+      reactions: JSON.stringify(reactions),
+      imgVersion: `${imgVersion}`,
+      imgId: `${imgId}`,
+      createdAt: `${createdAt}`,
+    };
 
-    const secondList: string[] = [
-      'commentsCount',
-      `${commentsCount}`,
-      'reactions',
-      JSON.stringify(reactions),
-      'imgVersion',
-      `${imgVersion}`,
-      'imgId',
-      `${imgId}`,
-      'createdAt',
-      `${createdAt}`,
-    ];
-    const dataToSave: string[] = [...firstList, ...secondList];
+    /*
+(`users:${currentUserId}`, 'postsCount'): KEY:VALUE, FIELD to get value from
+ReturnType<typeof this.client.multi >: improvising a return TYPE, so the return type of var multi will be whatever the this.client.multi returns.
+client.multi(): used to create redis multiple commands and execute them at once
+multi.HSET(`posts:${key}`, `${itemKey}`, `${itemValue}`): saves a post as hash to redis. {key} is the postId
+client.ZADD: saving post as a set. Which can then be retrieved based key(score)
+parseInt(postCount[0], 10) + 1: incrementing the post count once a new post is being added
+Object.entries(dataToSave): looping through the dataToSave{} to get each field and key to save
+(`users:${currentUserId}`, 'postsCount', count): updating the postcount of a user after a new post is being created
+multi.HSET(`users:${currentUserId}`, 'postsCount', count): saving the value of post count to the user hash i.e user key in the cache, 'KEY', VALUE
+multi.exec(): executes all the multi. commands written above in this method
+      */
 
     try {
       if (!this.client.isOpen) {
         await this.client.connect();
       }
 
-      /*
-(`users:${currentUserId}`, 'postsCount'): KEY:VALUE, FIELD to get value from
-ReturnType<typeof this.client.multi >: improvising a return TYPE, so the return type of var multi will be whatever the this.client.multi returns.
-client.multi(): used to create redis multiple commands and execute them at once
-multi.HSET(`posts:${key}`, dataToSave): saves a post as hash to redis. {key} is the postId
-client.ZADD: saving post as a set. Which can then be retrieved based key(score)
-parseInt(postCount[0], 10) + 1: incrementing the post count once a new post is being added
-(`users:${currentUserId}`, ['postsCount', count]): updating the postcount of a user after a new post is being created
-multi.HSET(`users:${currentUserId}`, ['postsCount', count]): saving the value of post count to the user hash i.e user key in the cache, ['KEY', VALUE]
-multi.exec(): executes all the multi. commands written above in this method
-      */
       const postCount: string[] = await this.client.HMGET(
         `users:${currentUserId}`,
         'postsCount'
@@ -121,9 +102,11 @@ multi.exec(): executes all the multi. commands written above in this method
         score: parseInt(uId, 10),
         value: `${key}`,
       });
-      multi.HSET(`posts:${key}`, dataToSave);
+      for (const [itemKey, itemValue] of Object.entries(dataToSave)) {
+        multi.HSET(`posts:${key}`, `${itemKey}`, `${itemValue}`);
+      }
       const count: number = parseInt(postCount[0], 10) + 1;
-      multi.HSET(`users:${currentUserId}`, ['postsCount', count]);
+      multi.HSET(`users:${currentUserId}`, 'postsCount', count);
       multi.exec();
     } catch (error) {
       log.error(error);
@@ -186,7 +169,6 @@ multi.exec(): executes all the multi. commands written above in this method
     }
   }
 
-
   /*
   getTotalPostsInCache: get the total number of post in the sorted set in our redis cache
   ZCARD('post'): returns the number of items in our post key in the cache
@@ -248,7 +230,6 @@ multi.exec(): executes all the multi. commands written above in this method
     }
   }
 
-
   /*
     getUserPostsFromCache: this gets a post by a particuular user
     ZRANGE: the user uId is used as the start and end
@@ -290,7 +271,6 @@ multi.exec(): executes all the multi. commands written above in this method
       throw new ServerError('Server error. Try again.');
     }
   }
-
 
   /*
   getTotalUserPostsInCache: this gets the total count of post made by a particular user
@@ -340,7 +320,7 @@ multi.exec(): executes all the multi. commands written above in this method
       multi.DEL(`comments:${key}`);
       multi.DEL(`reactions:${key}`);
       const count: number = parseInt(postCount[0], 10) - 1;
-      multi.HSET(`users:${currentUserId}`, ['postsCount', count]);
+      multi.HSET(`users:${currentUserId}`, 'postsCount', count);
       await multi.exec();
     } catch (error) {
       log.error(error);
@@ -375,33 +355,25 @@ multi.exec(): executes all the multi. commands written above in this method
       imgId,
       profilePicture,
     } = updatedPost;
-    const firstList: string[] = [
-      'post',
-      `${post}`,
-      'bgColor',
-      `${bgColor}`,
-      'feelings',
-      `${feelings}`,
-      'privacy',
-      `${privacy}`,
-      'gifUrl',
-      `${gifUrl}`,
-    ];
-    const secondList: string[] = [
-      'profilePicture',
-      `${profilePicture}`,
-      'imgVersion',
-      `${imgVersion}`,
-      'imgId',
-      `${imgId}`,
-    ];
-    const dataToSave: string[] = [...firstList, ...secondList];
+
+    const dataToSave = {
+      post: `${post}`,
+      bgColor: `${bgColor}`,
+      feelings: `${feelings}`,
+      privacy: `${privacy}`,
+      gifUrl: `${gifUrl}`,
+      profilePicture: `${profilePicture}`,
+      imgVersion: `${imgVersion}`,
+      imgId: `${imgId}`,
+    };
 
     try {
       if (!this.client.isOpen) {
         await this.client.connect();
       }
-      await this.client.HSET(`posts:${key}`, dataToSave);
+      for (const [itemKey, itemValue] of Object.entries(dataToSave)) {
+        await this.client.HSET(`posts:${key}`, `${itemKey}`, `${itemValue}`);
+      }
       const multi: ReturnType<typeof this.client.multi> = this.client.multi();
       multi.HGETALL(`posts:${key}`);
       const reply: PostCacheMultiType =

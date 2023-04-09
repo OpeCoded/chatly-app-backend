@@ -1,12 +1,11 @@
 import Queue, { Job } from 'bull';
 import Logger from 'bunyan';
-import { createBullBoard } from '@bull-board/api';
-import { BullAdapter } from '@bull-board/api/bullAdapter';
-import { ExpressAdapter } from '@bull-board/express';
+import { ExpressAdapter, BullAdapter, createBullBoard } from '@bull-board/express';
 import { config } from '@root/config';
 import { IAuthJob } from '@auth/interfaces/auth.interface';
 import { IEmailJob } from '@auth/user/interfaces/user.interface';
 import { IPostJobData } from '@post/interfaces/post.interface';
+import { IReactionJob } from '@reaction/interfaces/reaction.interface';
 // import { IEmailJob, IUserJob } from '@user/interfaces/user.interface';
 // import { IPostJobData } from '@post/interfaces/post.interface';
 // import { IReactionJob } from '@reaction/interfaces/reaction.interface';
@@ -31,8 +30,8 @@ concurrency: number of jobs to be processed at a given time e.g 5 jobs at a time
 
 */
 
-type IBaseJobData = IAuthJob | IEmailJob | IPostJobData;
-// | IReactionJob
+type IBaseJobData = IAuthJob | IEmailJob | IPostJobData | IReactionJob;
+
 // | ICommentJob
 // | IFollowerJobData
 // | IBlockedUserJobData
