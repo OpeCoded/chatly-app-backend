@@ -450,8 +450,8 @@ In the features dir, create a new dir auth
 Inside the auth dir create the following dir:
 
 controllers: this will contain the business logic
-interfaces: is like a contract of how the data you want to define or the data you're expecting should look like
-models: model for mongoDB
+interfaces: Interface is used for validating the structure (model) of an entity. An interface defines the syntax that any entity (e.g user, post) must adhere to. It's like a contract of how the data you want to define or the data you're expecting should look like.  
+models: This is the structure of an entity (i.e a collection/table) - for mongoDB
 routes: routes/urls for auth
 schemes: schemes for validation during sign up
 
@@ -480,8 +480,8 @@ We want to create our interfaces and model user authentication features
 Create a file auth.interface.ts in the interfaces dir
 Copy and paste the file you were provided with 
 
-Goto you tsconfig.ts file and define the absolute path for auth in the paths {}
-Create a file auth.schema.ts in the models dir
+Goto you tsconfig.ts file and define the absolute path for auth in the paths {} which will be used when importing
+Create a file auth.schema.ts in the models dir (auth collection)
 Copy and paste the file you were provided with 
 
 Install bycryptjs: npm i bcryptjs
@@ -526,7 +526,7 @@ Define baseUrl and urlPath
 Define a post req to create a user
 
 Start your redis server, mongo db and run your app
-Click send request in the auth.http file
+Send a request to the /signup endpoint in auth.http file
 If your req was successful, you picture would be uploaded to cloudinary
 
 
@@ -756,4 +756,613 @@ npm run lint:check => This checks for lint errors
 npm run prettier:check
 npm run prettier:fix => This fixes all prettier errors
 git add .
+git commit -m "Feature: Implemented Auth Feature"
+git push origin feature/auth-feature => Creates a new branch "feature/auth-feature" NB: deny any prompt that comes
+Visit the PR (Pull Request) link generated in the cmd i.e https://github.com/OpeCoded/chatly-app-backend/pull/new/feature/auth-feature
+Click on Create PR > Merge Confirm
 
+
+
+# BACKEND AUTH PASSWORD RESET
+
+# MAIL TRANSPORT CLASS
+
+We want to create methods that would be used to send emails on production and local development with different libraries for each.
+
+Nodemailer (local)
+Sendgrid (production)
+ejs (email templating engine)
+
+
+Switch to or create a new branch: git checkout -b feature/password-reset-feature
+Install modules to send email: npm i nodemailer @sendgrid/mail ejs
+Install the type declarations of the above
+
+Goto .env and create the following keys:
+SENDER_EMAIL
+SENDER_EMAIL_PASSWORD
+SENDGRID_API_KEY
+SENDGRID_SENDER
+
+Goto config.ts and define the properties of the above keys 
+
+Create a file mail.transport.ts in shared > services > email
+Import the required
+Create an interface IMailOptions
+Create a class MailTransport
+Goto nodemailer.com/about to copy the required methods (reference)
+
+
+# TEST DEV EMAIL SENDER
+
+Goto ethereal.email to create an ethereal account in order to have a sender email and password
+Paste the credentials in your .env file where appropriate
+Start your server in cmd and run your app
+
+- We want to test the developmentEmailSender while signing up (signin.ts controller)
+
+Goto signin.ts, call mailTransport.sendEmail() after signing userJwt. Pass in 3 required args (sender email, subject, body)
+- Note: use a wifi incase you're not receiving an email or try another network. Cus you have to be on the same network as the smtp server.
+Goto auth.http , test your signin endpoint and see if an email would drop in the ethereal.email inbox
+
+
+# EMAIL QUEUE AND WORKER
+
+Objective: Add email (job) to queue => Worker then send the email
+
+Create a file email.queue.ts in the queues dir
+Create a class EmailQueue
+Create a method addEmailJob, add it's interface to the BaseQueue (base.queue.ts)
+Create email.worker.ts in the workers dir
+Create a class EmailWorker
+Goto email.queue.ts, call processJob()
+
+
+# PASSWORD RESET TEMPLATES
+
+Create a dir templates in service > emails
+Create two dirs forgot-password, reset-password in the templates dir
+Inside the forgot-password dir create a file forgot-password-template.ts and forgot-password-template.ejs
+Copy and paste the snippets provided for forgot-password-template.ejs
+
+Goto forgot-password-template.ts, Import the required
+Create a class ForgotPasswordTemplate
+
+Inside the reset-password dir create a file reset-password-template.ts and reset-password-template.ejs
+Copy and paste the snippets provided for reset-password-template.ejs
+
+
+# TEST EMAIL WITH PASSWORD RESET TEMPLATES
+
+Goto signin.ts, create a var resetLink
+Create a var template
+Call emailQueue.addEmailJob()
+
+- Test sending the email using your signin.ts controller. NOTE: to test, update the sender email and pass in your .env with the one you've sepecified for receiver. Else it won't deliver
+
+For confirmation email after password has been changed
+Install the following: npm i moment ip
+Import them in signin.ts
+Create a var templateParams
+Call emailQueue.addEmailJob. Note: you can create a separate job for confirmation email but we used the addEmailJob
+
+
+# FORGOT PASSWORD CONTROLLER METHOD
+
+Create a file password.ts in the auth > controllers dir
+Import the required
+Create a class Password
+Create a method create()
+Create a method getAuthUserByEmail(), updatePasswordToken() in auth.service.ts
+Goto authRoutes.ts, add /forgot-password and /reset-password/:token route to the routes()
+
+
+# RESET PASSWORD CONTROLLER METHOD
+
+This method will change the password and send a confirmation email that the user's password was changed
+
+Goto password.ts
+Create a method update()
+- We want to check if the passwordRequestToken has not expired and if passwordResetToken exists
+Goto a auth.service.ts, create a method getAuthUserByPasswordToken()
+Goto authRoutes.ts, create a route for reset-password and pass the token param
+Testing: Create a new request for routes /forgot-password and /reset-password in the auth.http file
+Test the 2 new endpoints, copy token sent to the email and add it to the request to change the password
+
+
+# JEST CONFIG
+
+We want to setup our unit test using Jest, we'll be testing only our controller methods
+
+Install Jest: npm install --save-dev jest
+Install Jest types: npm i @types/jest, npm i @jest/types, npm i -D ts-jest
+
+Create a file jest.config.ts in the root of the project
+Import the required
+Create a var config
+
+
+# UNIT TEST SCRIPT COMMAND
+
+Goto package.json, add "test" key to the scripts object
+
+# AUTH UNIT TEST MOCK
+
+PURPOSE OF TESTING: to check if we're getting the expected/correct response
+
+- Test for sign up, we're going to be mocking data to be used for our tests, we won't be using real data from the DB. 
+
+Create a dir test in the controllers dir
+In the src dir, create a dir mocks
+In the mocks dir, create a file auth.mock.ts - In here, we will mock our request and response data for sign up
+Import the required
+Create a func authMockRequest
+Create a func authMockResponse
+
+
+# SIGN UP UNIT TEST P1
+
+We want to test if some required credentials values are not supplied when a user is trying to signup
+
+Create a file signup.test.ts in the controllers > test dir 
+Import the required
+Create a jest describe()
+To test, run: npm run test [this runs all test files in your source file]
+
+
+# SIGN UP UNIT TEST P2
+
+Use the it() to create other tests like we did above in part 1
+
+
+# CLEAR MOCKS
+
+We want to reset our mocks test before another test runs and clear all mocks after a test has finished
+
+Goto signup.test.ts
+Create a method beforeEach() in the describe()
+Call resetAllMocks() inside it
+Create a method afterEach()
+Run npm run test [with the path of the test file]
+
+
+# LOGIN UNIT TEST
+
+We want to create a test for our sign.ts controller method
+
+Create a file signin.test.ts in the test dir
+Copy and paste the snippet provided
+Run npm run test [with the path of the test file]
+
+
+# PASSWORD RESET & LOGOUT UNIT TEST
+
+Create a file password.test.ts, signout.test.ts in the test dir
+Copy and paste the snippet provided
+Run npm run test [with the path of the test file] to run individual test
+
+
+# CURRENT USER UNIT TEST
+
+Create a file user.mock.ts in the mocks dir
+
+Create a file current-user.test.ts, signout.test.ts in the test dir
+Copy and paste the snippet provided
+Run npm run test [with the path of the test file] to run individual test
+
+
+# PUSH CODE TO GITHUB
+
+git add .
+git commit -m "feature: implemented password reset feature with unit tests"
+
+
+
+# BACKEND POST FEATURE
+
+
+# SECTION INTRODUCTION
+
+
+# POST INTERFACE, MODEL AND SCHEMA
+
+Create a dir post in the feature dir
+Add the path to the post dir to tsconfig.json, jestconfig.ts
+Create the following dirs in the post dir controllers, interfaces, models, routes, schemes
+Create a file post.interface.ts in post > interfaces dir
+Create a file post.schema.ts in the post > models dir
+- Copy and paste the snippets provided in the files above
+
+Note: for schemas, you only add index: true to a field you're sure you're going to use to make a queries (i.e primary key)
+
+# POST JOI VALIDATION SCHEME
+
+Create a file post.schemes.ts in post > schemes dir
+Copy and paste the snippet provided
+
+- Note: we'll have 2 controllers for post upload. 
+1. Post without image. 
+2. Post with image
+
+
+# SOCKECT IO POST HANDLER
+
+We want to setup socketIO connection 
+For immediate response from the server when a user makes a post
+
+Create a file post.ts in shared > sockets
+Import the required
+Create a class SocketIOPostHandler
+
+Goto setupServer.ts, inside socketIOconnections(), create a var postSocketHandler
+
+
+# CREATE POST CONTROLLER METHOD
+
+Create a file create-post.ts in post > controllers
+Import the required
+Create two method post, postWithImage
+
+
+# SAVE POST TO REDIS CACHE
+
+We want to save posts inside redis as a hash
+
+Create a file post.cache.ts in shared > services > redis dir 
+Import the required
+Create a class PostCache
+Create a method savePostToCache
+
+
+# USE savePostToCache() inside create-post.ts controller
+
+Goto create-post.ts
+Create a var postCache
+In the post(), call postCache.savePostToCache() and pass in the req args to be saved in the cache
+Create a file postRoutes.ts in the post > routes dir
+Create a class PostRoutes
+Goto to the root routes.ts file and create a base path for postRoutes
+TESTING:
+Ensure you sign in a user before testing
+Create a file posts.http in the endpoints dir
+Send a request to this endpoint: POST {{baseUrl}}/{{urlPath}}/post
+
+
+# ADD POST SOCKECT IO EVENT
+
+We want to emit posts events in our post controller
+
+Goto creat-post.ts, call socketIOPostObject.emit() in the post()
+
+
+# POST QUEUE AND WORKER
+
+Create a file post.queue.ts in service > queues
+Create a class PostQueue
+Add IPostJobData to the base queue
+Create a file post.worker.ts in the workers dir
+Create a class PostWorker
+Create a file post.service.ts in the services dir
+Create a class PostService
+Createa a method addPostToDB
+Goto post.worker.ts, call postService.addPostToDB inside the savePostToDB()
+Goto create-post.ts controller, call postQueue.addPostJob() inside the post()
+
+
+# POST WITH IMAGE CONTROLLER METHOD
+
+Goto create-post.ts
+Create a method postWithImage()
+Goto postRoutes.ts, create a route for post/image/post
+
+
+# CREATE POST UNIT TEST
+ 
+Create a file post.mock.ts in the mocks dir
+Copy and paste the snippet provided
+Create a dir test in the post > controller dir
+Create a file create-post.test.ts
+Copy and paste the snippet provided
+
+
+# GET POST FROM REDIS CACHE
+
+We want to create methods to fetch get multiple posts, single posts etc
+
+Post fetching: redis > mongodb
+
+Goto post.cache.ts
+Create a method getPostsFromCache()
+
+
+# GET TOTAL POST COUNT FROM CACHE
+
+Goto post.cache.ts
+Export a type PostCacheMultiType
+
+
+Create getTotalPostsInCache(), getPostsWithImagesFromCache(), getUserPostsFromCache()
+
+
+# GET POST FROM MONGODB
+
+Create a method getPosts(), postsCount()
+
+
+# GET POST CONTROLLER 
+
+Create a file get-posts.ts in controllers > post 
+Import the required 
+Create an instance of PostCache
+Create a class Get
+Create a method post(), postWithImages()
+
+
+# GET POSTS ROUTES
+
+Goto postRoutes.ts
+Create get routes Get.prototype.posts, Get.prototype.postsWithImages
+
+Goto post.http to test the endpoint Post get
+
+# GET POST CONTROLLER UNIT TEST
+
+Create a file get-post.test.ts in post > controller > test
+Copy and paste the snippet provided
+Run: npm run test <file-path>
+
+
+
+# DELETE POST CONTROLLER 
+
+We want to create a method to delete a post from redis cache for a particular user
+We're going to delete the item from the set and hash
+
+
+Goto post.cache.ts
+Create a method deletePostFromCache()
+Goto post.service.ts
+Create a method deletePost()
+Goto post.worker.ts
+Create a method deletePostFromDB()
+Goto post.queue.ts, add the job method deletePostFromDB() to the PostQueue class
+
+Create a file delete-post.ts in the post > controller dir
+Import the required
+Create a class Delete
+Create a method post()
+
+Goto postRoutes.ts
+Create a route delete()
+
+Test in post.http
+
+
+# DELETE POST CONTROLLER UNIT TEST
+
+Create a file delete-post.test.ts in post > controller > test
+Copy and paste the snippet provided
+Run cmd: npm run test <file-path>
+
+
+# UPDATE POST IN REDIS CACHE
+
+Goto post.cache.ts
+Create a method updatePostInCache()
+
+
+# UPDATE POST CONTROLLER 
+
+Goto post.service.ts
+Create method editPost()
+Goto post.worker.ts 
+Create a method updatePostInDB()
+Goto post.queue.ts
+Add a job updatePostInDB to the queue
+Create a file update-post.ts in post > controllers dir
+
+
+# UPDATE POST WITH IMAGE CONTROLLER
+
+Goto update-post.ts
+Create a method postWithImage()
+Create a private method updatePostWithImage(), addImageToExistingPost
+Goto postRoutes.ts, create routes to update ordinary post and post with image i.e /post/image/:postId
+
+Test in the posts.http
+
+
+# UPDATE POST CONTROLLER UNIT TEST
+
+Create a file update-post.test.ts in post > controllers > test
+
+Copy and past the snippet code provided
+
+<NOTE: in testing, ensure the status response in the controller tallies with the one in the test.ts file, else the test will fail
+
+
+# PUSH CODE TO GITHUB
+
+git checkout -b feature/post-feature
+git add .
+git commit -m "feature: added post features"
+git push origin feature/post-feature
+git push
+
+
+# FIX TS CONFIG ISSUE
+
+Goto tsconfig.json
+Change the value of the rootDir to "." instead of "scr"
+
+
+
+# NEW VIDEOS ADDED TO THE COURSE
+
+# SECTION 3
+
+# Update dependencies
+
+- We want to update the libraries in package.json file, remove the ones not needed anymore.
+
+Run npm update
+
+Install package bullmq: npm i bullmq
+
+# Update build script
+
+ttypescript package converts an alias path to it's relative path, we want to use a better one which is tsc-alias.
+
+npm uninstall ttypescript
+npm install --save-dev tsc-alias
+Update your package.json with this:   "build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
+Run npm run build
+ * check your build folder, you'd notice the tsc-alias package replaced alias paths (@user/) with relative paths (./../) after typescript compilation
+
+
+
+ # SECTION 6
+
+
+ # Update redis HSET method in post cache
+
+HSET takes in 3 args in the new version of redis
+HSET('key', 'field', 'value')
+
+Convert your dataToSave from an array to an object, then loop through it to get each itemKey and itemValue then save to cache
+
+
+
+# BACKEND POST REACTIONS FEATURE
+
+
+# Reaction interface, model schema and joi schemes.
+
+Create a new branch: git checkout -b feature/post-reactions-feature
+Create a dir reactions in the features dir
+Create the following dirs in the reactions dir: controllers, interfaces, models, routes, schemes.
+
+Create respective files using the snippet provided for interfaces, models and schemes
+Add the paths to the reaction feature in your tsconfig.json and jest.config.ts file
+
+
+# Add post reaction to cache
+
+Create a file reaction.cache.ts in services > redis
+Create a method savePostReactionToCache()
+
+# Remove post reaction from redis cache
+
+Create a method removePostReactionFromCache()
+
+
+# Add reaction controller
+
+Create a file add-reactions.ts reactions > controllers dir
+Create a class Add {}
+Create a method reaction()
+Create an instance of ReactionCache
+
+Create a file reactionRoutes.ts in the reactions > routes dir 
+Create a class ReactionRoute{}
+Add reactionRoutes to the the base routes.ts file
+
+Test the route in your endpoint
+Create a file reactions.http
+Test the post endpoint
+
+
+# Fix add reaction issue
+
+helpers.ts file parseJson()
+Add this: return JSON.parse(prop);
+
+
+# Add post reaction to mongodb
+
+Create a file reaction.service.ts in db dir
+Create a class ReactionService
+Create a method addReactionDataToDB()
+
+# Post reaction queues and worker
+
+Create a method removeReactionDataFromDB()
+
+Create a new file reaction.queue.ts in the queues dir
+Create a method addReactionJob()
+Add IReactionJob to the base.queue.ts file
+Create a file reaction.workers.ts in the workers dir
+Create class ReactionWorker
+Create a method addReactionToDB(), removeReactionFromDB()
+
+Create a fresh post and try to add reaction to it
+Test in your reaction.http endpoint
+Check your redis and DB to ensure all works
+
+
+# Fix add reaction to mongodb error
+
+While creating our reactioinObject in add-reactions.ts, we're creating our own reaction id where as mongodb will also create another one for us. So by the time a user wants to update his/her reaction a new reaction id is being created which causes conflict.
+
+_id: new ObjectId()
+
+- solution:
+
+Goto reaction.service.ts
+Import omit 
+
+
+# Remove reaction controller
+
+Create a new file remove-reation.ts in the controllers dir
+Create a class Remove
+Create a delete route in the reactionRoutes.ts
+
+Create your DELETE endpoint in the reactions.http file for testing
+
+
+# Add and Remove reaction controllers unit test
+
+* Hint: test files gives you an overview of what data or values is being processed by your controller
+
+Create a file reactions.mock.ts in the mocks dir
+Copy and paste the snippet code provided
+Create a file add-reactions.test.ts, remove-reactions.test.ts in features > reactions > controllers > test dir
+Run npm run test <test-file-path>
+
+# Get post reactions from redis cache and MongoDB
+
+Goto reaction.cache.ts
+Create a method getReactionsFromCache()
+getSingleReactionByUsernameFromCache()
+
+
+# Get post reactions from mongoDB
+
+Goto reaction.service.ts
+Create a method getPostReactions()Create a method getSinglePostReactionByUsername()Create a method getReactionsByUsername()
+
+
+# Get reactions controller
+
+Create a file get-reactions.ts in feature > reactions > controllers dir
+Create a class Get
+Create a method reactions()
+Create a method singleReactionByUsername(), reactionsByUsername()
+
+
+# Get reactions routes
+
+Add all the get routes in reactionRoutes.ts
+
+Test the endpoint in your reactions.http
+
+
+# Get reactions controller unit test
+
+Create a file get-reactions.test.ts
+Copy and paste the snippet provided
+
+Run: npm run test <test-file-path>
+
+# Push code to github

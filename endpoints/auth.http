@@ -35,7 +35,7 @@ withCredentials: true
 
 {
   "username": "opecoded",
-  "password": "opecoded"
+  "password": "ademoye"
 }
 
 ###
@@ -45,16 +45,16 @@ Accept: application/json
 withCredentials: true
 
 {
-  "email": ""
+  "email": "opecoded@gmail.com"
 }
 
 ###
-POST {{baseUrl}}/{{urlPath}}/reset-password/<token>
+POST {{baseUrl}}/{{urlPath}}/reset-password/3c7237169cfbecb4613774d5b862b9b6c9318482
 Content-Type: application/json
 Accept: application/json
 withCredentials: true
 
 {
-  "password": "",
-  "confirmPassword": ""
+  "password": "ademoye",
+  "confirmPassword": "ademoye"
 }

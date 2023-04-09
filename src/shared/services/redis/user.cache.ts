@@ -18,6 +18,7 @@ Note, we're saving user's data as a set
 ZADD enables us to retrive all properties at a go in a set based on a key e.g id
 
 const {..}  = createdUser: destructuring props from IUserDocument
+BREAKING VALUES INTO SMALL CHUNKS BECAUSE IT'S A LONG LIST
 firstList: string[]: saving user text based data in to arrays, with key value pairs
 secondList: string[]: saving user object based data in to arrays, with key value pairs and then convert them to string
 thirdList: string[]: saving user text based data in to arrays, with key value pairs
