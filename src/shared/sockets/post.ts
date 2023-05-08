@@ -1,5 +1,6 @@
-// import { ICommentDocument } from '@comment/interfaces/comment.interface';
-// import { IReactionDocument } from '@reaction/interfaces/reaction.interface';
+
+import { ICommentDocument } from '@comment/interfaces/comment.interface';
+import { IReactionDocument } from '@reaction/interfaces/reaction.interface';
 import { Server, Socket } from 'socket.io';
 
 
@@ -18,16 +19,24 @@ export class SocketIOPostHandler {
     socketIOPostObject = io;
   }
 
+  /*
+  socket.on(): listening to an event
+  ('reaction'): event name
+  (reaction: IReactionDocument): reaction document call back (reaction doc from the server)
+  this.io.emit: sends feedback to client
+  ('update like', reaction): event to be listened for on the client side, reaction document data sent back to the client
+  */
   public listen(): void {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     this.io.on('connection', (socket: Socket) => {
-      // socket.on('reaction', (reaction: IReactionDocument) => {
-      //   this.io.emit('update like', reaction);
-      // });
+      //listening to reaction events
+      socket.on('reaction', (reaction: IReactionDocument) => {
+        this.io.emit('update like', reaction);
+      });
 
-      // socket.on('comment', (data: ICommentDocument) => {
-      //   this.io.emit('update comment', data);
-      // });
+      //listening to comment events
+      socket.on('comment', (data: ICommentDocument) => {
+        this.io.emit('update comment', data);
+      });
     });
   }
 }
