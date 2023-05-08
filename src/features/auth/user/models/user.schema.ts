@@ -35,7 +35,7 @@ const userSchema: Schema = new Schema({
   bgImageId: { type: String, default: '' },
 });
 
-const UserModel: Model<IUserDocument> = model<IUserDocument>(
+const UserModel: Model<IUserDocument> = mongoose.models.User || model<IUserDocument>(
   'User',
   userSchema,
   'User'

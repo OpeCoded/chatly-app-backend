@@ -6,6 +6,8 @@ import { IAuthJob } from '@auth/interfaces/auth.interface';
 import { IEmailJob } from '@auth/user/interfaces/user.interface';
 import { IPostJobData } from '@post/interfaces/post.interface';
 import { IReactionJob } from '@reaction/interfaces/reaction.interface';
+import { ICommentJob } from '@comment/interfaces/comment.interface';
+import { IFollowerJobData } from '@follower/interfaces/follower.interface';
 // import { IEmailJob, IUserJob } from '@user/interfaces/user.interface';
 // import { IPostJobData } from '@post/interfaces/post.interface';
 // import { IReactionJob } from '@reaction/interfaces/reaction.interface';
@@ -30,10 +32,8 @@ concurrency: number of jobs to be processed at a given time e.g 5 jobs at a time
 
 */
 
-type IBaseJobData = IAuthJob | IEmailJob | IPostJobData | IReactionJob;
+type IBaseJobData = IAuthJob | IEmailJob | IPostJobData | IReactionJob | ICommentJob  | IFollowerJobData;
 
-// | ICommentJob
-// | IFollowerJobData
 // | IBlockedUserJobData
 // | INotificationJobData
 // | IFileImageJobData

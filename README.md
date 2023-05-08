@@ -655,7 +655,7 @@ In the create() create a var userJwt, req.session
 
 Run your request to create a new user in the auth.http file
 Check your mongodb compass, you will see you db has been created with the name you specified in your .env file for DB_URL
-You will have to collections Auth and User, the Auth is contains auth credentials, while the user contains the user bio data but the authId is referencec in the User collection
+You will have to collections Auth and User, the Auth is contains auth credentials, while the user contains the user bio data but the authId is referenced in the User collection
 
 
 # USER LOGIN CONTROLLER
@@ -1364,5 +1364,225 @@ Create a file get-reactions.test.ts
 Copy and paste the snippet provided
 
 Run: npm run test <test-file-path>
+
+# Push code to github
+
+git add .
+git commit -m "feat: implemented post reactions feature"
+
+Create a PR and Merge
+
+git checkout development
+git pull
+
+
+# BACKEND COMMENTS FEATURES
+
+# Comment Interface, Model and Joi Schema
+
+Create a folder comments in the features dir and all relevant directories in it
+
+* Ensure you create the absolute path in tsconfig.json and jest.config.ts file
+
+Create the interfaces, models, routes and schemes for comments
+
+Copy and paste the snippet files provided in each files in the dirs above
+
+* Ensure you create the absolute path in tsconfig.json
+
+
+
+# Comment redis cache methods part 1
+
+Create a file comment.cache.ts in services > redis dir
+Create savePostCommentToCache(), getCommentsFromCache()
+
+# Comment redis cache methods part 2
+
+Create methods getCommentsNamesFromCache(), getSingleCommentFromCache()
+
+
+# Comment SocketIO Event
+
+We want to listen to 2 socketIO events coming from the client side and then emit (invoke) 2 other events for both reactions and comment feature
+
+
+Goto shared > sockets > post.ts
+In the listen(), listen to events and emit them back to the client
+
+Ensure the sockect (e.g SocketIOPostHandler) you're listening to is added to your sockectIOConnections() in the setupServer.ts file 
+
+
+# Comments Service Part 1
+
+Create a file comment.service.ts in the services > db dir  
+Create a class CommentService
+Create a method addCommentToDB(), getPostComments(),getPostCommentNames()
+
+
+# Comments Queue and Workers
+
+Create files comment.queue.ts, comment.worker.ts
+Add the respective job types to your base queue
+
+
+# Add comment controller
+
+Create a file add-comment.ts
+Create a class Add
+Create a method comment()
+
+
+# Get comment controller
+
+Create a file get-comments.ts
+Create a class Get
+Create methods comments(), commentsNamesFromCache(), singleComment()
+Create a file commentRoutes.ts in the feature comments > routes dir
+Add commentRoutes to main route file routes.ts
+
+
+# Test comment feature
+
+Create comments.http
+Test your endpoints
+
+
+# Comment controller unit tests
+
+Create files add-comment.test.ts, get-comments.test.ts 
+
+Goto reactions.mock.ts, create var  commentsData to mock our comment feature
+
+
+# 9 Backend Followers, Following, Block and Unblock Features
+
+
+# Follower Interface, Model Schema.
+
+Create a new dir followers in the features dir
+In it, create the relevant dirs controllers, interfaces, models and routes and corresponding files.
+
+Add the typescript path transform to tsconfig.json and jest.config.ts file
+
+Note: this feature doesn't require schemes BECAUSE the data we'll be sending in this feature will be sent via req.params not req.body
+
+Hence, we only use validators (schemes) when using req.body.
+
+Before you start, create a new branch for this feature
+
+git checkout -b feature/followers-feature
+
+# Follow data structure
+
+# Save following follower to redis cache
+
+Create a file follower.cache.ts in the redis dir
+Create methods saveFollowerToCache(), removeFollowerFromCache(), updateFollowersCountInCache(), getFollowersFromCache()
+
+
+# Add follower controller part 1
+
+Create a file follow-user.ts
+Create a method follower()
+userData()
+
+# Add follower controller part 2
+
+Create a file follower.ts in the sockets dir
+Goto setupServer.ts inside the socketIOConnections {}, add the SocketIOFollowerHandler
+
+Create your route file followerRoutes.ts
+Add this new route to the base route file routes.ts
+Create follower.http in the endpoints dir
+Test the put endpoint 
+
+# Follower service part 1
+
+Create a file follower.service.ts 
+Create a method addFollowerToDB()
+
+
+# Follower service part 2
+
+Create a method removeFollowerFromDB()
+Create a file follower.worker.ts
+Create a file follower.queue.ts
+Add the queue created to your base.queue.ts
+Goto follower-user.ts i.e controller
+invoke the followerQueue
+
+
+# Unfollow user controller
+
+Create a file unfollow-user.ts
+Create a method Remove
+Create a method follower()
+Create the route to unfollow a user in the followerRoutes.ts file
+Test in your endpoint
+
+
+# Follow and unfollow user unit tests
+
+Create a file followers.mock.ts
+Copy the snippets provided
+Create follower-user.test.ts
+Create unfollow-user.test.ts
+Run the test
+
+
+
+# Get followers from redis cache
+
+In the cache
+followers: #userId {...}, we want to get all items i.e followers in a particular hash
+
+Create a method getFollowersFromCache()
+
+# Fix auth bug
+
+
+# Get followers from mongoDB
+
+Goto follower.service.ts
+Create a method getFolloweeData(), getFollowerData()
+
+
+# Get followers controller
+
+Create a file get-followers.ts
+Create methods userFollowing(), userFollowers()
+Add the routes methods and respective controller method in your followerRoutes.ts file
+Test the endpoints in follower.http
+
+# Block user redis cache method
+
+Goto follower.cache.ts
+Create a method updateBlockedUserPropInCache()
+
+
+# Block user mongodb method
+
+Create a file block-user.service.ts in service > db dir
+Create a class BlockUserService
+Create a method blockUser()
+Create a method unblockUser()
+Create files blocked.queue.ts, blocked.worker.ts
+
+
+# Block and Unblock user controller
+
+Create a file block-user.ts in features > followers > controllers 
+Create a method block()
+Add the route for block/unblock feature to followerRoutes.ts
+
+# User socket IO handler
+
+Create a file user.ts in the sockets dir to listen for events and emit them
+Goto setupServer.ts, add SocketIOUserHandler and listen to userSocketHandler
+
+# Unit Tests 
+
+Add required tests in the followers > controllers > test dir
 
 # Push code to github
