@@ -42,12 +42,22 @@ export class Helpers {
     return JSON.parse(prop);
   }
 
+  /*
+isDataURL: this checks if a value (image uploaded) is a base64 or just a string
+dataUrlRegex: checks if the value sent to this method starts with or contain data: prop
+test: returns true or false if a match is found
+  */
   static isDataURL(value: string): boolean {
     const dataUrlRegex =
       /^\s*data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)?)?(;base64)?,([a-z0-9!$&',()*+;=\-._~:@\\/?%\s]*)\s*$/i;
     return dataUrlRegex.test(value);
   }
 
+
+  /*
+  this method shuffles the content of the list passed in to it
+  
+  */
   static shuffle(list: string[]): string[] {
     for (let i = list.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));

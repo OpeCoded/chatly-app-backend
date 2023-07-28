@@ -39,6 +39,9 @@ client.HSET: saves the actual user data to the cache
 this.client.HGETALL: getting a user from cache using it's user id
 users:${userId}: KEY: USER_ID in cache
 Helpers.parseJson: our helper method to convert stringified props to json
+
+y
+UserItem: interface or datatype for item to be update in the user cache using the method updateSingleUserItemInCache()
 */
 const log: Logger = config.createLogger('userCache');
 type UserItem = string | ISocialLinks | INotificationSettings;
@@ -55,11 +58,7 @@ export class UserCache extends BaseCache {
     super('userCache');
   }
 
-  public async saveUserToCache(
-    key: string,
-    userUId: string,
-    createdUser: IUserDocument
-  ): Promise<void> {
+  public async saveUserToCache(key: string, userUId: string, createdUser: IUserDocument): Promise<void> {
     const createdAt = new Date();
     const {
       _id,
@@ -80,65 +79,39 @@ export class UserCache extends BaseCache {
       quote,
       bgImageId,
       bgImageVersion,
-      social,
+      social
     } = createdUser;
-    const firstList: string[] = [
-      '_id',
-      `${_id}`,
-      'uId',
-      `${uId}`,
-      'username',
-      `${username}`,
-      'email',
-      `${email}`,
-      'avatarColor',
-      `${avatarColor}`,
-      'createdAt',
-      `${createdAt}`,
-      'postsCount',
-      `${postsCount}`,
-    ];
-    const secondList: string[] = [
-      'blocked',
-      JSON.stringify(blocked),
-      'blockedBy',
-      JSON.stringify(blockedBy),
-      'profilePicture',
-      `${profilePicture}`,
-      'followersCount',
-      `${followersCount}`,
-      'followingCount',
-      `${followingCount}`,
-      'notifications',
-      JSON.stringify(notifications),
-      'social',
-      JSON.stringify(social),
-    ];
-    const thirdList: string[] = [
-      'work',
-      `${work}`,
-      'location',
-      `${location}`,
-      'school',
-      `${school}`,
-      'quote',
-      `${quote}`,
-      'bgImageVersion',
-      `${bgImageVersion}`,
-      'bgImageId',
-      `${bgImageId}`,
-    ];
-    const dataToSave: string[] = [...firstList, ...secondList, ...thirdList];
+    const dataToSave = {
+      '_id': `${_id}`,
+      'uId': `${uId}`,
+      'username': `${username}`,
+      'email': `${email}`,
+      'avatarColor': `${avatarColor}`,
+      'createdAt': `${createdAt}`,
+      'postsCount': `${postsCount}`,
+      'blocked': JSON.stringify(blocked),
+      'blockedBy': JSON.stringify(blockedBy),
+      'profilePicture': `${profilePicture}`,
+      'followersCount': `${followersCount}`,
+      'followingCount': `${followingCount}`,
+      'notifications': JSON.stringify(notifications),
+      'social': JSON.stringify(social),
+      'work': `${work}`,
+      'location': `${location}`,
+      'school': `${school}`,
+      'quote': `${quote}`,
+      'bgImageVersion': `${bgImageVersion}`,
+      'bgImageId': `${bgImageId}`
+    };
 
     try {
       if (!this.client.isOpen) {
         await this.client.connect();
       }
-      await this.client.ZADD('user', {
-        score: parseInt(userUId, 10),
-        value: `${key}`,
-      });
-      await this.client.HSET(`users:${key}`, dataToSave);
+      await this.client.ZADD('user', { score: parseInt(userUId, 10), value: `${key}` });
+      for (const [itemKey, itemValue] of Object.entries(dataToSave)) {
+        await this.client.HSET(`users:${key}`, `${itemKey}`, `${itemValue}`);
+      }
     } catch (error) {
       log.error(error);
       throw new ServerError('Server error. Try again.');
@@ -177,6 +150,20 @@ export class UserCache extends BaseCache {
     }
   }
 
+  /*
+  getUsersFromCache: this method is used to fetch multiple users from the cache
+  start, end: used for pagination
+  excludedUserKey: logged in user to exclude (i.e currently logged in user isn't expectd to see his/herself in the list of users fetched)
+  ZRANGE: for pagination. Note that we can only get one user hash from the key at a time
+  response: gets user from the 'user' key/collection in the cache
+  HGETALL: helps us to get/fetch all the hash instead of one
+  (const key of response): looping through the response
+  key !== excludedUserKey: ensures a key in the response isn't the currently logged in user key, then get all users data/info based on the key
+  UserCacheMultiType: our defined Type for multi.exec()
+  replies: results returned after getting all users
+  (const reply of replies as IUserDocument[]): looping through all the users to get individual data in the reply
+  push(reply): adding each reply (user) into the empty list userReplies
+  */
   public async getUsersFromCache(
     start: number,
     end: number,
@@ -223,6 +210,29 @@ export class UserCache extends BaseCache {
       throw new ServerError('Server error. Try again.');
     }
   }
+
+  /*
+  this method gets random users from the cache
+  userId: currently logged in user
+  excludedUsername: excludes currrently logged in user in the random list
+  replies: list to hold random users
+  followers: followers of the currently logged in user, so as to determin wether to show follow button
+  users: gets all the user in the cache
+  randomUsers: list of shuffled users by the help of shuffle() in our helpers.ts
+  slice(): returns the first 11 items in the list
+  (const key of randomUsers): loops through the randomUsers and
+  indexOf(followers, key): (FOLLOWERS LIST, KEY) checks if any of the randomly selected users is part of the followers
+  (followerIndex < 0): means the particular follower isn't a follower of the logged in user. so if true,
+  userHash: fetch the user info from the users hash in the cache based on the key passed in 
+  as unknown as IUserDocument: changes the TYPE and sets to the actual TYPE we want
+  replies.push(): adds the user's hash the list of random users to be displayed
+  excludedUsernameIndex: the index (currently logged in user) we want to remove from replies []
+  findIndex(replies, ['username',excludedUsername,]): (LIST WE ARE FINDING FROM, ['KEY', VALUE])
+  replies.splice(excludedUsernameIndex, 1): removes the currently logged in username (excludedUsernameIndex) from the replies []
+  splice(excludedUsernameIndex, 1): (VALUE TO REMOVE, NOs of items to remove)
+  (const reply of replies): looping through the replies [] to parse each data we need about each user 
+  
+  */
 
   public async getRandomUsersFromCache(
     userId: string,
@@ -278,6 +288,15 @@ export class UserCache extends BaseCache {
     }
   }
 
+  /*
+  updateSingleUserItemInCache: this method is used to update individual props in each user's hash
+  userId: user hash/id
+  prop: property to update
+  value: value to update
+  client.HSET: updating a user hash
+  response: returning/retrieving the newly update user hash complete doc
+  */
+
   public async updateSingleUserItemInCache(
     userId: string,
     prop: string,
@@ -287,8 +306,12 @@ export class UserCache extends BaseCache {
       if (!this.client.isOpen) {
         await this.client.connect();
       }
-      const dataToSave: string[] = [`${prop}`, JSON.stringify(value)];
-      await this.client.HSET(`users:${userId}`, dataToSave);
+      //const dataToSave: string[] = [`${prop}`, JSON.stringify(value)];
+      await this.client.HSET(
+        `users:${userId}`,
+        `${prop}`,
+        JSON.stringify(value)
+      );
       const response: IUserDocument = (await this.getUserFromCache(
         userId
       )) as IUserDocument;
@@ -299,6 +322,10 @@ export class UserCache extends BaseCache {
     }
   }
 
+  /*
+    getTotalUsersInCache: this method is used to get the total count/number of items in the users set
+    ZCARD: returns count
+  */
   public async getTotalUsersInCache(): Promise<number> {
     try {
       if (!this.client.isOpen) {

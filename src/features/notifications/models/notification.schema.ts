@@ -19,6 +19,14 @@ const notificationSchema: Schema = new Schema({
   createdAt: { type: Date, default: Date.now() }
 });
 
+/*
+insertNotification: method used to send a notification
+.methods: used to define a method
+notificationSchema.methods: defining a new method on our already defined schema
+create: creates a notification new document
+
+notifications: gets all notification docs that matches the userTo id i.e all notifications going to a particular user
+*/
 notificationSchema.methods.insertNotification = async function (body: INotification) {
   const {
     userTo,

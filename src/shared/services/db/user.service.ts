@@ -10,6 +10,8 @@ import mongoose from 'mongoose';
 // import { indexOf } from 'lodash';
 // import { followerService } from '@service/db/follower.service';
 import { AuthModel } from '@auth/models/auth.schema';
+import { followerService } from './follower.service';
+import { indexOf } from 'lodash';
 
 /*
 addUserData: this adds a user to the mongo db
@@ -27,6 +29,7 @@ aggregateProject(): is used to specify the fields we want to return. To exclude 
 '$authId.username': means unwind.username i.e the object returned after lookup
 
 users[0]: aggregate() method returns results as a [] list, so [0] means getting the first element (user) returned
+users[0]: returns only one item
 */
 
 class UserService {
@@ -34,6 +37,12 @@ class UserService {
     await UserModel.create(data);
   }
 
+  /*
+  updatePassword: used to update user password
+  { username }: where condition
+  $set: update the new value to the DB
+  password: field to update
+  */
   public async updatePassword(
     username: string,
     hashedPassword: string
@@ -44,6 +53,11 @@ class UserService {
     ).exec();
   }
 
+  /* 
+  updates the basic info of a user in the DB
+  { _id: userId }: field to update based on _id match
+  $set: new values to update with 
+  */
   public async updateUserInfo(userId: string, info: IBasicInfo): Promise<void> {
     await UserModel.updateOne(
       { _id: userId },
@@ -58,6 +72,10 @@ class UserService {
     ).exec();
   }
 
+  /* 
+  used to update the social links of the user
+  social: links:  FIELD, VALUE TO UPDATE
+  */
   public async updateSocialLinks(
     userId: string,
     links: ISocialLinks
@@ -69,6 +87,10 @@ class UserService {
       }
     ).exec();
   }
+
+  /* 
+  updateNotificationSettings: updates the notification setting of users
+  */
 
   public async updateNotificationSettings(
     userId: string,
@@ -114,6 +136,19 @@ class UserService {
     return users[0];
   }
 
+  /*
+  getAllUsers: this method is used to get all users in the DB
+  userId: currently logged in user, skip: for pagination, limit: nos. of records to display
+  users: query to get all user
+  $ne: NOT EQUAL, fetches all the docs that doesn't macththe currently logged in userId
+   mongoose.Types.ObjectId(userId): casting the userId passed in from string to ObjectId
+   localField: 'authId': id on User collection
+   foreignField: '_id': id on Auth collection
+   as: 'authId': returns the results as authId
+   NOTE: $lookup returns an array, and we're also fetching multiple items, so it's going to be and array inside and array [
+    []
+   ], so we use the $unwind operator
+  */
   public async getAllUsers(
     userId: string,
     skip: number,
@@ -138,11 +173,36 @@ class UserService {
     return users;
   }
 
-  /* public async getRandomUsers(userId: string): Promise<IUserDocument[]> {
+  /*
+  this method gets random users from the db
+  userId: currently logged in user
+  randomUsers: list to hold random users
+  users: gets all users when the users id (i.e _id) != the userId passed in
+  $lookup: to gain access to other fields related to users in the Auth Collection
+  $sample: number of docs to return
+  $addFields: new users fields we bring in from the Auth Collection, all other fields will come from the Users Collection by the help of aggregateProject() defined below
+  { $unwind: '$authId' }: make the value of the lookup as an object, so we can say .dot something
+  $project: used to omit the props we don't want to return by setting it to 0, esle 1 if we need them.
+
+  (const user of users): looping through random users []
+  NOTE: follower her should be followeer
+  followerIndex: the index of the followee coming from the followers[]
+  (followers, user._id.toString()): INDEX, VALUE
+  (followerIndex < 0): the followee is not following the currently loggged in user
+  randomUsers.push(user): add the follower to the randomUsers[]
+  */
+  public async getRandomUsers(userId: string): Promise<IUserDocument[]> {
     const randomUsers: IUserDocument[] = [];
     const users: IUserDocument[] = await UserModel.aggregate([
       { $match: { _id: { $ne: new mongoose.Types.ObjectId(userId) } } },
-      { $lookup: { from: 'Auth', localField: 'authId', foreignField: '_id', as: 'authId' } },
+      {
+        $lookup: {
+          from: 'Auth',
+          localField: 'authId',
+          foreignField: '_id',
+          as: 'authId',
+        },
+      },
       { $unwind: '$authId' },
       { $sample: { size: 10 } },
       {
@@ -151,17 +211,20 @@ class UserService {
           email: '$authId.email',
           avatarColor: '$authId.avatarColor',
           uId: '$authId.uId',
-          createdAt: '$authId.createdAt'
-        }
+          createdAt: '$authId.createdAt',
+        },
       },
       {
         $project: {
           authId: 0,
-          __v: 0
-        }
-      }
+          __v: 0,
+        },
+      },
     ]);
-    const followers: string[] = await followerService.getFolloweesIds(`${userId}`);
+    const followers: string[] = await followerService.getFolloweesIds(
+      `${userId}`
+    );
+
     for (const user of users) {
       const followerIndex = indexOf(followers, user._id.toString());
       if (followerIndex < 0) {
@@ -169,12 +232,27 @@ class UserService {
       }
     }
     return randomUsers;
-  } */
+  }
 
+  /*
+getTotalUsersInDB: this method gets the total number of users in the User collection
+   */
   public async getTotalUsersInDB(): Promise<number> {
     const totalCount: number = await UserModel.find({}).countDocuments();
     return totalCount;
   }
+
+  /*
+  searchUsers: this method is used to search a particular user
+  regex: this method takes in a regex as an arg
+  users: queries the Auth collection for a match where username field is equal to the regex arg
+  $lookup: makes a ref to the User collection to get all other info of a user
+  localField: '_id': is in the Collection we're quering from i.e Auth Collection
+  foreignField: 'authId': field to match in the User collectoin
+  as: 'user': lookup result variable name
+  { $unwind: '$user' }: makes the result of the lookup an object
+  $project: collating data we need after the lookup
+  */
 
   public async searchUsers(regex: RegExp): Promise<ISearchUser[]> {
     const users = await AuthModel.aggregate([
@@ -201,6 +279,7 @@ class UserService {
     return users;
   }
 
+  /* this are the results we want to send back to the client after the fetching */
   private aggregateProject() {
     return {
       _id: 1,

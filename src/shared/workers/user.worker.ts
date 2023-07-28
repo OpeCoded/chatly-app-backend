@@ -22,7 +22,8 @@ class UserWorker {
     }
   }
 
-  /*   async updateUserInfo(job: Job, done: DoneCallback): Promise<void> {
+  /* worker to process update basic info job */
+  async updateUserInfo(job: Job, done: DoneCallback): Promise<void> {
     try {
       const { key, value } = job.data;
       await userService.updateUserInfo(key, value);
@@ -32,9 +33,10 @@ class UserWorker {
       log.error(error);
       done(error as Error);
     }
-  } */
+  }
 
-  /*   async updateSocialLinks(job: Job, done: DoneCallback): Promise<void> {
+  /* worker to process update social links job */
+  async updateSocialLinks(job: Job, done: DoneCallback): Promise<void> {
     try {
       const { key, value } = job.data;
       await userService.updateSocialLinks(key, value);
@@ -44,9 +46,12 @@ class UserWorker {
       log.error(error);
       done(error as Error);
     }
-  } */
+  }
 
-  /*   async updateNotificationSettings(job: Job, done: DoneCallback): Promise<void> {
+  async updateNotificationSettings(
+    job: Job,
+    done: DoneCallback
+  ): Promise<void> {
     try {
       const { key, value } = job.data;
       await userService.updateNotificationSettings(key, value);
@@ -56,7 +61,7 @@ class UserWorker {
       log.error(error);
       done(error as Error);
     }
-  } */
+  }
 }
 
 export const userWorker: UserWorker = new UserWorker();
