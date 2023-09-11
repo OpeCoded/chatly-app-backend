@@ -4,7 +4,7 @@ import { config } from '@root/config';
 import { imageService } from '@service/db/image.service';
 
 const log: Logger = config.createLogger('imageWorker');
-
+/* Note: key is always an Id (here its imgId or backgroundImageId)  */
 class ImageWorker {
   async addUserProfileImageToDB(job: Job, done: DoneCallback): Promise<void> {
     try {
@@ -29,7 +29,7 @@ class ImageWorker {
       done(error as Error);
     }
   }
-
+  /* addImageToDB: used to add/upload images to the db e.g post image */
   async addImageToDB(job: Job, done: DoneCallback): Promise<void> {
     try {
       const { key, imgId, imgVersion } = job.data;

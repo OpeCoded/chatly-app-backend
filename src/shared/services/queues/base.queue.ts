@@ -7,7 +7,11 @@ import { IEmailJob } from '@auth/user/interfaces/user.interface';
 import { IPostJobData } from '@post/interfaces/post.interface';
 import { IReactionJob } from '@reaction/interfaces/reaction.interface';
 import { ICommentJob } from '@comment/interfaces/comment.interface';
-import { IFollowerJobData } from '@follower/interfaces/follower.interface';
+import { IBlockedUserJobData, IFollowerJobData } from '@follower/interfaces/follower.interface';
+import { IChatJobData, IMessageData } from '@chat/interfaces/chat.interface';
+import { INotificationJobData } from '@notification/interfaces/notification.interface';
+import { IUserJob } from '@user/interfaces/user.interface';
+import { IFileImageJobData } from '@image/interfaces/image.interface';
 // import { IEmailJob, IUserJob } from '@user/interfaces/user.interface';
 // import { IPostJobData } from '@post/interfaces/post.interface';
 // import { IReactionJob } from '@reaction/interfaces/reaction.interface';
@@ -28,18 +32,11 @@ createBullBoard: Queues dashboard
 this.queue.on(): events available for us to listen to when using queues
 addJob: method to create a new job inside the queue
 concurrency: number of jobs to be processed at a given time e.g 5 jobs at a time
-
+processJob: method used to exec jobs in the queue
 
 */
 
-type IBaseJobData = IAuthJob | IEmailJob | IPostJobData | IReactionJob | ICommentJob  | IFollowerJobData;
-
-// | IBlockedUserJobData
-// | INotificationJobData
-// | IFileImageJobData
-// | IChatJobData
-// | IMessageData
-// | IUserJob;
+type IBaseJobData = IAuthJob | IEmailJob | IPostJobData | IReactionJob | ICommentJob  | IFollowerJobData | IBlockedUserJobData | INotificationJobData | IFileImageJobData | IChatJobData | IMessageData | IUserJob;
 
 let bullAdapters: BullAdapter[] = [];
 export let serverAdapter: ExpressAdapter;

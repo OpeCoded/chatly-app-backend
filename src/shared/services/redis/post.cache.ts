@@ -10,7 +10,6 @@ import { Helpers } from '@global/helpers/helpers';
 import { RedisCommandRawReply } from '@redis/client/dist/lib/commands';
 import { IReactions } from '@reaction/interfaces/reaction.interface';
 
-
 /*
 For ref: check user.cache.ts
 Note: for the PostCache class, we're not creating it's instance immeidately here like we've always be doing. It's better to create the instance of classes right inside the controller in which we want to use them.
@@ -52,6 +51,8 @@ export class PostCache extends BaseCache {
       commentsCount,
       imgVersion,
       imgId,
+      videoVersion,
+      videoId,
       reactions,
       createdAt,
     } = createdPost;
@@ -72,6 +73,8 @@ export class PostCache extends BaseCache {
       reactions: JSON.stringify(reactions),
       imgVersion: `${imgVersion}`,
       imgId: `${imgId}`,
+      videoId: `${videoId}`,
+      videoVersion: `${videoVersion}`,
       createdAt: `${createdAt}`,
     };
 
@@ -289,6 +292,48 @@ multi.exec(): executes all the multi. commands written above in this method
     }
   }
 
+  /* 
+  getPostsWithVideosFromCache: this method is used to fetch posts with videos from cache
+  */
+  public async getPostsWithVideosFromCache(
+    key: string,
+    start: number,
+    end: number
+  ): Promise<IPostDocument[]> {
+    try {
+      if (!this.client.isOpen) {
+        await this.client.connect();
+      }
+
+      const reply: string[] = await this.client.ZRANGE(key, start, end, {
+        REV: true,
+      });
+      const multi: ReturnType<typeof this.client.multi> = this.client.multi();
+      for (const value of reply) {
+        multi.HGETALL(`posts:${value}`);
+      }
+      const replies: PostCacheMultiType =
+        (await multi.exec()) as PostCacheMultiType;
+      const postWithVideos: IPostDocument[] = [];
+      for (const post of replies as IPostDocument[]) {
+        if (post.videoId && post.videoVersion) {
+          post.commentsCount = Helpers.parseJson(
+            `${post.commentsCount}`
+          ) as number;
+          post.reactions = Helpers.parseJson(`${post.reactions}`) as IReactions;
+          post.createdAt = new Date(
+            Helpers.parseJson(`${post.createdAt}`)
+          ) as Date;
+          postWithVideos.push(post);
+        }
+      }
+      return postWithVideos;
+    } catch (error) {
+      log.error(error);
+      throw new ServerError('Server error. Try again.');
+    }
+  }
+
   /*
   deletePostFromCache: deletes a post from the post set and it's hash in redis
   postCount: the number of posts made by a user i.e userId(score)
@@ -301,7 +346,6 @@ multi.exec(): executes all the multi. commands written above in this method
    multi.HSET(`users:${currentUserId}`: updating back the post count of the user
    multi.exec(): executes all multi method/commands at the same time
   */
-
   public async deletePostFromCache(
     key: string,
     currentUserId: string
@@ -353,15 +397,18 @@ multi.exec(): executes all the multi. commands written above in this method
       gifUrl,
       imgVersion,
       imgId,
+      videoId,
+      videoVersion,
       profilePicture,
     } = updatedPost;
-
     const dataToSave = {
       post: `${post}`,
       bgColor: `${bgColor}`,
       feelings: `${feelings}`,
       privacy: `${privacy}`,
       gifUrl: `${gifUrl}`,
+      videoId: `${videoId}`,
+      videoVersion: `${videoVersion}`,
       profilePicture: `${profilePicture}`,
       imgVersion: `${imgVersion}`,
       imgId: `${imgId}`,

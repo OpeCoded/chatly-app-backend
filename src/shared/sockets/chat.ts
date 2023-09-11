@@ -12,6 +12,12 @@ export class SocketIOChatHandler {
     socketIOChatObject = io;
   }
 
+  /*
+    socket.on('join room'): this is emitted when a use is on a chat page with another user
+    senderSocketId: username of the logged in sender, gotten from our exported connectedUsersMap in user.ts
+    socket.join: adds a value to the socket being listened to
+  */
+
   public listen(): void {
     this.io.on('connection', (socket: Socket) => {
       socket.on('join room', (users: ISenderReceiver) => {

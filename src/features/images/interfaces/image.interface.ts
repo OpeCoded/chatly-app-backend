@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
 
+/*
+imgId: profile picture
+bgImageId: profile background image
+*/
 export interface IFileImageDocument extends mongoose.Document {
   userId: mongoose.Types.ObjectId | string;
   bgImageVersion: string;
@@ -18,6 +22,9 @@ export interface IFileImageJobData {
   imageId?: string;
 }
 
+/*
+IBgUploadResponse: for response gotten when an image is uploaded to cloudinary
+*/
 export interface IBgUploadResponse {
   version: string;
   publicId: string;

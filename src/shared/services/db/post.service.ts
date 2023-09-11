@@ -1,6 +1,11 @@
 import { IUserDocument } from '@auth/interfaces/user.interface';
 import { UserModel } from '@auth/user/models/user.schema';
-import { IPostDocument, IGetPostsQuery, IQueryComplete, IQueryDeleted } from '@post/interfaces/post.interface';
+import {
+  IPostDocument,
+  IGetPostsQuery,
+  IQueryComplete,
+  IQueryDeleted,
+} from '@post/interfaces/post.interface';
 import { PostModel } from '@post/models/post.schema';
 import { Query, UpdateQuery } from 'mongoose';
 
@@ -13,9 +18,15 @@ Promise.all: combining await when we have multiple async funcs to call
 */
 
 class PostService {
-  public async addPostToDB(userId: string, createdPost: IPostDocument): Promise<void> {
+  public async addPostToDB(
+    userId: string,
+    createdPost: IPostDocument
+  ): Promise<void> {
     const post: Promise<IPostDocument> = PostModel.create(createdPost);
-    const user: UpdateQuery<IUserDocument> = UserModel.updateOne({ _id: userId }, { $inc: { postsCount: 1 } });
+    const user: UpdateQuery<IUserDocument> = UserModel.updateOne(
+      { _id: userId },
+      { $inc: { postsCount: 1 } }
+    );
     await Promise.all([post, user]);
   }
 
@@ -32,15 +43,29 @@ class PostService {
   posts: fetches posts using postQuery statement
   $match: fetches the documents that match the specified postQuery statement
   aggregate: process the data records/documents and return computed results
+  (query?.videoId): checks if the videoId not null, then fetch posts where videoId is not null
   */
-  public async getPosts(query: IGetPostsQuery, skip = 0, limit = 0, sort: Record<string, 1 | -1>): Promise<IPostDocument[]> {
+
+  public async getPosts(
+    query: IGetPostsQuery,
+    skip = 0,
+    limit = 0,
+    sort: Record<string, 1 | -1>
+  ): Promise<IPostDocument[]> {
     let postQuery = {};
     if (query?.imgId && query?.gifUrl) {
       postQuery = { $or: [{ imgId: { $ne: '' } }, { gifUrl: { $ne: '' } }] };
+    } else if (query?.videoId) {
+      postQuery = { $or: [{ videoId: { $ne: '' } }] };
     } else {
       postQuery = query;
     }
-    const posts: IPostDocument[] = await PostModel.aggregate([{ $match: postQuery }, { $sort: sort }, { $skip: skip }, { $limit: limit }]);
+    const posts: IPostDocument[] = await PostModel.aggregate([
+      { $match: postQuery },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+    ]);
     return posts;
   }
 
@@ -52,7 +77,6 @@ class PostService {
     return count;
   }
 
-
   /*
   deletePost: deletes a post from mongo db
   deletePost: query statement to delte a post from mongodb
@@ -61,20 +85,28 @@ class PostService {
   $inc: increment operator
   */
   public async deletePost(postId: string, userId: string): Promise<void> {
-    const deletePost: Query<IQueryComplete & IQueryDeleted, IPostDocument> = PostModel.deleteOne({ _id: postId });
+    const deletePost: Query<IQueryComplete & IQueryDeleted, IPostDocument> =
+      PostModel.deleteOne({ _id: postId });
     // delete reactions here
-    const decrementPostCount: UpdateQuery<IUserDocument> = UserModel.updateOne({ _id: userId }, { $inc: { postsCount: -1 } });
+    const decrementPostCount: UpdateQuery<IUserDocument> = UserModel.updateOne(
+      { _id: userId },
+      { $inc: { postsCount: -1 } }
+    );
     await Promise.all([deletePost, decrementPostCount]);
   }
-
-
 
   /*
   editPost: updates a post
   $set: used to update an object in the db
   */
-  public async editPost(postId: string, updatedPost: IPostDocument): Promise<void> {
-    const updatePost: UpdateQuery<IPostDocument> = PostModel.updateOne({ _id: postId }, { $set: updatedPost });
+  public async editPost(
+    postId: string,
+    updatedPost: IPostDocument
+  ): Promise<void> {
+    const updatePost: UpdateQuery<IPostDocument> = PostModel.updateOne(
+      { _id: postId },
+      { $set: updatedPost }
+    );
     await Promise.all([updatePost]);
   }
 }

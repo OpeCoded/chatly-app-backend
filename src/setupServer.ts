@@ -17,6 +17,7 @@ import 'express-async-errors';
 import Logger from 'bunyan';
 import { config } from '@root/config';
 import { Server } from 'socket.io';
+import apiStats from 'swagger-stats';
 import { createClient } from 'redis';
 import { createAdapter } from '@socket.io/redis-adapter';
 import applicationRoutes from '@root/routes';
@@ -24,6 +25,9 @@ import { CustomError, IErrorResponse } from '@global/helpers/error-handler';
 import { SocketIOPostHandler } from '@socket/post';
 import { SocketIOFollowerHandler } from '@socket/follower';
 import { SocketIOUserHandler } from '@socket/user';
+import { SocketIONotificationHandler } from '@socket/notification';
+import { SocketIOImageHandler } from '@socket/image';
+import { SocketIOChatHandler } from '@socket/chat';
 
 /*
 app: this is an instance of our express application, with it's constructor. Which will be passed to app.ts
@@ -48,6 +52,7 @@ export class ChattyServer {
     this.securityMiddleware(this.app);
     this.standardMiddleware(this.app);
     this.routesMiddleware(this.app);
+    this.apiMonitoring(this.app);
     this.globalErrorHandler(this.app);
     this.startServer(this.app);
   }
@@ -56,7 +61,7 @@ export class ChattyServer {
     /*
         CALLING OUR SECURITY MIDDLEWARES
         app.use: used to call middlewares to be used in our app i.e Application (app variable)
-        name: name given to the security middleware
+        name: name given to the security middleware (cookieSession)
         keys: used to sign and verify cookies values
         maxAge: the amount of time the cookie will be valied for (e.g 24 * 7 * 3600000 = 7 days)
         origin: client url https://localhost:3000 (local/live)
@@ -101,6 +106,18 @@ export class ChattyServer {
   }
 
   /*
+  this method is used to monitor our API
+  uriPath: url path to access the stats dashboard in the browser
+  */
+  private apiMonitoring(app: Application): void {
+    app.use(
+      apiStats.getMiddleware({
+        uriPath: '/api-monitoring',
+      })
+    );
+  }
+
+  /*
   app.all: used to catch error related to urls in express app e.g when a dev makes requests to an endpoint that doesn't exist
   app.use: used to catch the custom errors we defined in error-handlers.ts
   if (error instanceof CustomError): this checks if an error is of type custom error we defined ourself
@@ -135,8 +152,12 @@ export class ChattyServer {
         startHttpServer: listening to our server for connections
         socketIO: an instance of socketIO, it invokes the createSocketIO middleware
         socketIOConnections: I think it's used to listen to sockectIO comms
+        (!config.JWT_TOKEN): if no jwt, throw and error
         */
   private async startServer(app: Application): Promise<void> {
+    if (!config.JWT_TOKEN) {
+      throw new Error('JWT_TOKEN must be provided');
+    }
     try {
       const httpServer: http.Server = new http.Server(app);
       const socketIO: Server = await this.createSocketIO(httpServer);
@@ -172,6 +193,7 @@ export class ChattyServer {
         LISTENING TO HTTP SERVER CONNECTIONS
         listen: start a server listening for connections
         */
+    log.info(`Worker with process id of ${process.pid} has started...`);
     log.info(`Server has started with process ${process.pid}`);
     httpServer.listen(SERVER_PORT, () => {
       log.info(`Server running on port ${SERVER_PORT}`);
@@ -183,9 +205,16 @@ export class ChattyServer {
     const followerSocketHandler: SocketIOFollowerHandler =
       new SocketIOFollowerHandler(io);
     const userSocketHandler: SocketIOUserHandler = new SocketIOUserHandler(io);
+    const notificationSocketHandler: SocketIONotificationHandler =
+      new SocketIONotificationHandler();
+    const imageSocketHandler: SocketIOImageHandler = new SocketIOImageHandler();
+    const chatSocketHandler: SocketIOChatHandler = new SocketIOChatHandler(io);
 
     postSocketHandler.listen();
     followerSocketHandler.listen();
     userSocketHandler.listen();
+    notificationSocketHandler.listen(io);
+    imageSocketHandler.listen(io);
+    chatSocketHandler.listen();
   }
 }

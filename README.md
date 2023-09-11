@@ -1586,3 +1586,1436 @@ Goto setupServer.ts, add SocketIOUserHandler and listen to userSocketHandler
 Add required tests in the followers > controllers > test dir
 
 # Push code to github
+
+
+
+# Backend Notification Feature
+
+- Note: we didn't use redis for this feature
+
+- All notifications will be sent from our services files
+
+Create a dir notifications in the src dir
+Create required dirs controllers, interfaces, models and routes
+Add abosolute path for notification in tsconfig.json, jest.config.ts file
+Create the files for interface and models
+
+
+
+# Insert Notification Method
+
+Goto notification.schema.ts
+Create a method insertNotification()
+Create a file notification.service.ts 
+Create a method getNotifications()
+
+
+# Add comment notification
+
+Goto comment.service.ts 
+use the insertNotification() inside the addCommentToDB()
+
+
+# Notification SocketIO Handler
+
+Create a new file notification.ts in the sockets dir
+Goto setupServer.ts, add the SocketIONotificationHandler
+Goto comment.service.ts, call the method socketIONotificationObject.emit()
+
+
+# Test comment notification
+
+Create a new dir notifications in the templates dir
+Create a file notification.ejs, notification-template.ts in the new dir
+Add a new commentsEmail job to email.queue.ts
+
+Create a testing email account at https://ethereal.email/
+Add the account credentials to your .env file 
+Add a comment in comment.http, note that you can't send notification to yourself it has to be another user entirely 
+
+
+
+
+# Add followers notification
+- NB: use comments notification for explannation
+
+Goto follower.service.ts
+Inside the addFollowerToDB(), use our insertNotification()
+
+
+# Add reactions notifications
+
+- NB: follow the process used above
+
+Goto reaction.service.ts
+In the addReactionDataToDB(), use our insertNotification()
+
+
+# Delete and Update Notification Service
+
+Allow user to update(change status to read) or delete a notification from the DB
+
+
+Goto notification.service.ts
+Create methods updateNotification(), deleteNotification()
+
+
+# Update and Delete Controller
+
+Create files update-notification.ts, delete-notification.ts
+Create a file notificationRoutes.ts
+Define routes to get, put, delete a notification
+Add notificationRoutes to the root routes.ts file
+Create notification.http endpoint file
+
+
+# Get notifications controller 
+
+Create a file get-notifications.ts
+in the controllers dir
+Goto notificationRoutes.ts, create a get() route
+Goto notification.http and test the GET endpoint
+
+
+
+# Notification controller unit test 
+
+Create files get,update,delete-notification.test.ts files
+Create notificaton.mock.ts file
+Then test the test files 
+
+
+
+# Backend Images Upload Feature
+
+Note: images will be saved in the DB and not cache
+
+Profile pictures, profile background image.
+
+
+# Images interface and model schema
+
+Create a dir images in the features dir
+Create the needed dirs in it
+Create your interface, models.
+Add image abs import part to tsconfig.json
+Create a file image.ts in schemes dir 
+
+
+# Update single user item in redis cache
+
+We want to create a function to update some props (bgImageVersion, bdImageId, social, profilePicture etc) in each users hash
+
+Create a method updateSingleUserItemInCache() in user.cache.ts
+
+
+# Add images to database
+
+Create a file image.service.ts in services > db dir 
+Create a class ImageService
+
+
+# Get images from mongodb
+
+Create methods getImageByBackgroundId(), getImages()
+Create a file image.worker.ts
+Create methods to exec jobs coming from image.service.ts file
+Create a file image.queue.ts
+Create methods to process each jobs using processJob()
+
+Create a file image.ts in the sockets directory
+Create a socketIOImageObject
+Add the socketIOImageObject to the setupServer.ts file
+
+
+# Add image queue method
+
+We need to update our create-post.ts and update-post.ts controllers to use our addImageToDB() worker to save the post image to the DB
+
+Call the imageQueue.addImageJob() in the postWithImage() in creat-post.ts file
+
+Do the above in update-post.ts controller too
+
+
+# Add profile image controller
+
+
+Create a file add-image.ts in images > controller dir
+
+Create methods profileImage(), backgroundImage()
+
+
+# Add background image controller part 1
+
+From client side
+
+Option 1: if a user is uploading a bg image foro the first time, we'd send the image as a base64 encoded string
+
+Option 2: a user might want to upload and already uploaded image for bg image, so the image can just be selected instead of reuploading. So the string will be used
+
+
+Goto helpers.ts
+Create a method isDataURL()
+Goto add-images.ts, create a method backgroundUpload()
+
+# Add background image controller part 2
+
+Goto add-images.ts
+Create a method backgroundImage()
+
+Create a file imageRoutes.ts in images > routes dir
+Add the route to the base routes.ts file
+Create a new endpoint file, image.http for testing your endpoints or routes
+
+
+# Delete images controller
+
+Create a file delete-image.ts in images > controllers dir
+Create methods image(), backgroundImage()
+Create your delete route in imageRoutes.ts
+Test it in image.http file
+
+
+# Get images controller
+
+Create a file get-images.ts
+Create a method images()
+Create a get route in imageRoutes.ts
+Test it in image.http file
+
+
+
+# Add controller unit tests
+
+Create a test dir in images > controllers dir
+Create required test files
+and a file image.mock.test
+
+
+# PUSH THE CODE TO GITHUB OPE
+
+
+
+
+# BACKEND CHAT FEATURE
+
+
+# # Section introduction
+
+In the mongoDB we'd have 2 collections Conversations & Messages
+
+
+Conversation will have IDs of sender and receiver of a message, plus the auto generated id by mongoose
+
+
+
+Redis cache and MongoDB
+
+chatList: {
+  user hash: {
+    [
+      *list of people chatting with the top level user hash*
+      {receiverId,converstationId}
+    ]
+  }
+}
+
+
+messages: {
+  conversationId hash: {
+    [
+      *list of all messages*
+      {_all data as regards a message_}
+    ]
+  }
+}
+
+
+# Chat interface, model schema and joi schemes
+
+Create a feature branch chat-features
+Create a new dir chat in the features dir
+Create dir controllers, models, schemes, interfaces and routes in the chat dir
+Create a new path for chat in the tsconfig.json and jest.config.ts file 
+
+Create files conversation.interface.ts, chat.interfaces.ts, conversation.schema.ts, chat.schema.ts, chat.ts (schemes)
+
+# Add chat controller part 1
+
+Controller to add chat messages
+
+Create a file add-chat-message.ts in the controllers dir
+
+Create a class Add
+Create a method message()
+
+Create a file chat.ts in the sockets dir, for listening to chat events
+Add chatSocketHandler to setupServer.ts
+
+Create a method emitSocketIOEvent() in add-chat-message.ts
+Create a method messageNotification()
+
+
+# Add chatlist to redis cache
+
+Create a file message.cache.ts in the redis dir
+Create a method addChatListToCache()
+Goto add-chat-message.ts, create an instance of the messageCache()
+Invoke messageCache.addChatListToCache() in the message() to create add the sender and receiver to the chatList in the cache
+
+
+# Add chat message route
+
+Create a file chatRoutes.ts
+Create a file chat.http for testing 
+
+
+# Add chat message to redis cache
+
+messages : 
+conversationId {
+  messageData
+}
+
+Goto message.cache.ts
+Create a method addChatMessageToCache()
+Goto add-chat-message.ts, call messageCache.addChatMessageToCache() in the message()
+
+
+# Add chat users to redis cache
+
+Goto message.cache.ts
+Create methods getChatUsersList(), addChatUsersToCache(), removeChatUsersFromCache()
+Goto add-chat-message.ts, create methods addChatUsers(), removeChatUsers()
+Create the routes to add and remove user one and user two from the userChatList in chatRoutes.ts
+/chat/message/add-chat-users
+/chat/message/remove-chat-users
+
+Test the routes in your endpoint file chat.http
+
+
+# Add chat message to mongoDB
+
+Create file in chat.service.ts in shared > services > db
+
+Create a class ChatService and export its' instance
+Create a method addMessageToDB()
+Create files chat.worker.ts, chat.queue.ts
+
+Add the data type (e.g IChatJobData, IMessageData) for each job in base.queue.ts file
+
+Goto add-chat-message.ts
+Invoke ('addChatMessageToDB', messageData) in the message()
+Test in your chat.http endpoint
+
+
+# Get conversation list from redis cache
+
+
+We want to create methods to retrieve the conversation list (i.e chatList) and messages list from the redis cache 
+
+Goto message.cache.ts 
+Create a method getUserConversationList()
+
+
+# Get conversation list from mongoDB
+
+Goto chat.service.ts, create a method getUserConversationList()
+
+- Controller
+
+Create a file get-chat-message.ts in chat > controllers dir
+
+Create a method conversationList()
+cachedList: gets the conversation 
+Goto chatRoutes.ts
+Create a Get route for conversationList() 
+Test route in your chat.http file
+
+
+# Get chat messages
+
+We want to get actual messages that was been sent from the cache using the senderId and receiverId
+
+Goto message.cache.ts
+Create a method getChatMessagesFromCache()
+Goto chat.service.ts
+Create a method getMessages()
+Goto get-chat-messages.ts
+Create a method messages()
+Create a get route to get messages in chatRoutes.ts
+Test the routes in you chat.http file 
+
+
+# Mark messages as deleted in cache
+
+We want to update the deleteForMe and deleteForEveryone boolean property in messages hash or message collection to true. It's interface is IMessageData
+- No actuall delete was done
+
+
+Goto message.cache.ts
+Create a method markMessageAsDeleted()
+Create a private method getMessage()
+
+
+
+# Mark messages as deleted in MongoDB
+
+Goto chat.service.ts
+Create a method markMessageAsDeleted()
+Goto chat.worker.ts
+Create a method markMessageAsDeleted()
+Goto chat.queue.ts
+Add the markMessageAsDeleted() to the processJob()
+
+Create a file delete-chat-message.ts in the chat > controllers dir
+Create a method markMessageAsDeleted()
+Create a delete route in chatRoutest.ts and prototype the Delete class in delete-chat-message.ts controller
+Test the endpoint in your chat.http
+
+
+# Update messages in redis cache
+
+We want to mark all messages in a conversation as read when the receiver comes to the chat page in the cache
+
+Goto message.cache.ts
+Create a method updateChatMessages()
+
+
+# Update messages in mongoDB
+
+We want to mark all messages in a conversation as read when the receiver comes to the chat page in the DB
+
+
+Goto chat.service.ts
+Create a method markMessagesAsRead()
+Goto chat.worker.ts
+Create a method markMessagesAsReadInDB()
+Goto chat.queue.ts
+Create processJob for markMessagesAsReadInDB()
+Add the job in your base.queue.ts file too
+
+Create a file update-chat-message.ts in chat > controllers
+Create a method message()
+Goto chatRoutes.ts 
+Add a put() route for message() created in update-chat-message.ts
+
+Create a file chat.http in the endpoints dir to test the controller
+
+
+
+# Fix message update bug in redis cache
+
+
+# Add message reaction to redis cache
+
+
+We want to add a feature where by user can make reactions to messages received both in the cache and in th DB
+
+
+Goto message.cache.ts
+Create a method updateMessageReaction()
+
+
+
+# Add message reaction to DB
+
+Goto chat.service.ts
+Create a method updateMessageReaction()
+Goto chat.worker.ts
+Create a method updateMessageReaction()
+Goto chat.queue.ts
+Add the updateMessageReaction job worker to the queue
+Add the chat queue to the Base queue
+Create a file add-message-reaction.ts in chat > controllers dir
+Create a method reaction()
+Goto chatRoutes.ts
+Create a route put('/chat/message/reaction'....
+Test it in the chat.http
+
+
+# Add message controller unit test
+
+Create a dir tests in the chat > controllers dir 
+Inside the tests dir, create individual test file for each of the chat related controllers
+Create a file chat.mock.ts in the mocks dir 
+
+
+
+
+
+# BACKEND USERS FEATURE
+
+
+# Add user map inside socketIO handler
+
+We want to create a map and a list of every user that logs in and then send it back to the client.
+Which we will use to determine when a user is online.
+
+
+
+
+Goto sockets > user.ts
+Create a map connectedUsersMap
+Create a method addClientToMap()
+Create a method removeClientFromMap()
+
+
+# Emit online users
+
+We want to emit users in the users[] in user.ts and also get the socketIDs of two users when they start to chat with each other
+
+Goto sockets > user.ts
+Create methods addUser, removeUser
+Goto sockets > chat.ts
+In the socket.on('join room'), get sender and receiver socketIDs from our exported connectedUsersMap()
+ in sockets > user.ts
+
+
+
+# User schemes
+- Everything that has do do with the user profile is done here
+
+Create dirs required for the users feature i.e controllers, routes, schemes, interfaces etc.
+
+Create a file info.ts in the schemes dir 
+Copy and paste the snippet provided
+
+
+
+# Get users from redis cache
+
+We want to create a method to get multiple users from the cache 
+
+
+Goto user.cache.ts 
+Create a method getUsersFromCache()
+
+
+# Get users profile controller 
+
+We want to create a method to get user's profile from mongoDB
+
+Goto user.service.ts
+Create a method getAllUsers()
+Create a method aggregateProject()
+
+Create a file get-profile.ts in user > controllers dir
+Create a method all()
+Create a private method allUsers()
+Create an interface IUserAll
+Create a private methods usersCount(), followers()
+
+
+# Get total users
+
+We want to get the total number of users we have in our cache (the users sorted set) and DB (Users collection)
+
+Goto user.cache.ts
+Create a method getTotalUsersInCache()
+Goto user.service.ts
+Create a method getTotalUsersInDB()
+Goto get-profile.ts
+Inside the usersCount(), invoke the getTotalUsersInCache() and getTotalUsersInDB()
+
+Create a file userRoutes.ts in the routes dir
+Create routes as per requirements
+Add the userRoutes.ts file to the base route file routes.ts
+
+
+
+Create a new endpoint user.http to test the routes
+
+
+
+
+# Fix user followers bug
+
+
+
+# Get user profile 
+
+We want to get the profile of the logged in user and also get the profile of another user using the userId 
+
+
+Goto get-profile.ts
+Create a method profile()
+Create a method profileByUserId()
+Goto userRoutes.ts, create routes for the two methods just created
+
+
+# Get user profile and posts
+
+We want to create a method to get a user's profile and all the posts created by that particular user
+
+Goto get-profile.ts 
+Create a method profileAndPosts()
+Goto userRoutes.ts
+Create a get route for profileAndPosts
+Test the endpoing in user.http
+
+
+
+
+# Get random users from redis cache
+
+Goto user.cache.ts 
+Create a method getRandomUsersFromCache()
+Goto helpers.ts
+Create a method shuffle()
+
+
+# Get random users from MongoDB
+
+
+Goto user.service.ts
+Create a method getRandomUser()
+Goto follower.service.ts
+Create a method getFolloweesIds()
+Goto user.service.ts, use the getFolloweesIds() just created to get the followers of the currently logged in user 
+
+
+
+# Random users controller method
+
+
+Goto get-profile.ts
+Create a method randomUserSuggestions()
+Goto userRoutes.ts
+Create a get route for randomUserSuggestions()
+Test the endpoint in user.http
+
+
+
+# Search users
+
+We want to allow users to search for another user right on the chat page using `username`
+We'll be performing the search only in the DB
+
+Create a method escapeRegex() in helpers.ts
+
+Goto user.service.ts
+Create a method searchUsers()
+Create a file search-user.ts in the user > controllers dir 
+Create a get route for user() in userRoutes.ts
+Test the endpoint in the user.http file 
+
+
+# Change password
+
+We want to create methods to do the following: 
+
+Change password in the mongoDB
+Update notifications settings in Users hash/collection
+Social information 
+
+
+Goto user.service.ts
+Create a method updatePassword()
+Creat a file change-password.ts in user > controllers dir
+Create a put route for the password() in userRoutes.ts
+
+
+
+
+# Update basic info 
+
+Goto user.service.ts
+Create methods updateUserInfo(), updateSocialLinks()
+Goto user.worker.ts
+Create methods updateUserInfo(), updateSocialLinks()
+Goto user.queue.ts
+Add the jobs updateUserInfo, updateSocialLinks in the constructor 
+Goto to the base.queue.ts 
+Add IUserJob
+
+Create a file update-basic-info.ts in user > controllers 
+Create methods info(), social()
+Goto userRoutes.ts
+Create a put route for the info(), social().
+
+
+
+# Update notification settings
+
+Goto user.service.ts
+Create a method updateNotificationSettings()
+Goto user.queue.ts, add the method updateNotificationSettings() to the queue
+Create a file update-setting.ts in the user > controllers dir
+Create a method notification()
+Create a put route in userRoutes.ts for the notification()
+
+Test all endpoints we've created so far in user.http file 
+
+
+# Fix change password bug
+
+
+# Add controller unit tests 
+
+Create dir test in user > controllers
+Inside the test dir, create all test files for the controllers 
+
+
+# Health routes part 1 & 2
+
+Health routes are used to verify or check the status of request made in our app 
+
+200 (healthy), 400, 500 etc response code
+
+
+Install axios
+Create a file healthRoutes.ts in user > routes dir
+Create methods health(), env(), instance(), fiboRoutes()
+Goto base route file routes.ts
+Define the health routes for the methods created above
+Add EC2_URL=http://169.254.169.254/latest/meta-data/instance-id to your env file
+This endpoint is used to get the EC2 instance id 
+Add EC2_URL to config.ts file
+
+
+
+# Test health routes
+
+Create a file health.http in the endpoints dir to test the health routes 
+
+
+
+
+# BACKEND VIDEO UPLOAD FEATURE
+
+
+
+
+# Add video properties to post model 
+
+Video file will be sent from the frontend as a base64 encoded string 
+
+post > dir
+
+Goto post.interface.ts
+Add videoId, videoVersion in IPostDocument
+Add videoId to IGetPostsQuery
+Goto to post.schema.ts
+Add videoVersion, videoId
+Goto post.schemes.ts
+Add video, videoVersion, videoId in postSchema
+Add video, videoVersion, videoId in postWithImageSchema
+
+Create a schema postWithVideoSchema
+
+
+# Update post cache methods 
+
+Goto post.cache.ts
+Destructure vars videoId and videoVersion from createdPost and add the vars to dataToSave
+
+Add video, videoId, videoVersion to methods that requires it
+
+Goto post.service.ts
+If videoId exist and not null, add it to postQuery
+
+
+
+
+# Add video upload method to cloudinary upload file 
+
+We want to add ability to upload video to our cloudinary upload file
+
+
+Goto cloudinary-upload.ts
+Create a method videoUpload()
+
+
+# Create post with video 
+
+Goto create-post.ts
+Create a method postWithVideo()
+Goto postRoutes.ts
+Create a post route for postWithVideo()
+Test the controller in post.http
+
+
+
+# Test post video upload 
+
+Ensure you add data:video/mp4;base64,********** then your converted base 64 video to the video: "" in your post.http when testing 
+
+
+
+# Update post with video 
+
+Goto update-post.ts
+Implement videoId: '', videoVersion: '' where needed
+
+Rename updatePostWithImage methods to updatePost()
+Goto postRoutes.ts
+Add a put route for postWithVideo()
+
+
+
+# Get posts with videos
+
+
+Goto get-posts.ts
+Create a method postsWithImages()
+Goto postRoutes.ts
+Create a get route for postsWithVideos()
+
+
+
+
+
+# BACKEND PM2 AND MONGODB SETUP
+
+
+
+# Seed user script part 1
+
+We want to create a script that will generate fake users for our app
+
+
+Install faker js: npm i @faker-js/faker@7.4.0
+Create a file seeds.ts in the src dir
+Install canvas, will be used to generate DP: npm i canvas  
+
+
+# Seed user script part 2
+
+Add "seeds:dev": "npx ts-node src/seeds.ts" to package.json file 
+
+Run npm run dev
+Run npm run seeds:dev in another terminal window
+
+
+# Handle process exceptions
+
+We want to create a method to help us catch unhandled exceptions (i.e errors)
+
+Goto app.ts 
+Create a method handleExit()
+Invoke handleExit() in the Application {}
+
+
+
+# Add MongoDB url
+
+We want to create a Live or Online MongoDB Database
+
+We are going to add our .env.production file to AWS S3 bucket in .zip format, because it's not right to push our .env file to github 
+And when we're inside the EC2 instance, we will get the .env file from AWS S3 bucket, unzip it and rename it to .env before we run the cmd to start or build the project
+
+Create a file .env.production in the root dir
+
+Login to your MongoDB Atlas online account 
+Create a new cluster/DB
+Create a DB user and password
+Connect to your DB with MongoDB Driver (copy the connection url string)
+Paste the connection string in .env.production DATABASE_URL variable
+Fill in your dbname, username, password etc
+
+
+
+
+# Install swagger stats library
+
+We want to install a library 'Swagger-Stats' to do some API monitoring locally
+
+Purpose: Trace API calls and Monitor API performance, health and usage statistics in Node.js Microservices
+
+
+Production APM(Application Monitoring) tool example is Datadog
+
+
+Run:
+npm install swagger-stats --save
+npm install prom-client@12 --save
+Goto setupServer.ts
+Import swagger-stats as apiStats
+Create a method apiMonitoring()
+Invoke apiMonitoring() in the start() after routesMiddleware()
+Start your app 
+Goto http://localhost:5000/api-monitoring
+
+
+
+# Install PM2 Library
+
+We want to add our start command to our scripts {} in package.json, which will be used to start our app in production. We will use a tool called PM2 (production process manager) to do this
+
+PM2 allows our app to take full advantage of the machine it's going to be run on i.e Node will use full core of the machine
+
+In other words PM2 allows process to run independently
+It create specified number of instance of our app, which can then have different processes running on them.
+When a process is blocked on a instance, it moves it to the next available instance
+
+
+
+Run: npm install pm2 -g
+Goto package.json
+Add a command "start": , "seeds:prod": to the script{}
+
+
+
+# Update start command
+
+
+
+
+# Merge to all branches
+
+Add the below to your .gitignore file
+
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.develop
+.env.staging
+.env.production
+.env.local
+
+
+Create a file .env.development.example just to show users what our env vars look like, NO VALUES in it
+
+
+
+# Backend Deployment AWS Setup
+
+
+Goto aws.amazon.com
+Create an account if you don't have (Free Tier)
+
+
+# Create IAM User (on root user account)
+
+IAM: Identity and Access Management
+
+Reason: you're not to access AWS Services with your Root account, so we're to create IAM user to access AWS services
+
+
+US East (N. Virginia - us-east-1 : REGION - AVAILABLITY ZONE
+
+
+On AWS Console
+Go To Services > Security & Identity > Users > IAM or just search for IAM
+
+*In production, Enable multi-factor authentication (MFA)
+
+
+Creating an IAM users
+
+Access Management > Users > Create User
+Set AdministratorAccess Permission for the newly created user, this will allow the user to have access to all AWS Services
+Create Access Key for the user > Select the Command Line Interface (CLI) use case
+Download the key as .csv file
+
+
+# Add billing policy to IAM User (on root user account)
+
+Goto IAM Dashboard > Policies
+Create Policy IAMUserBilling
+Search for and select billing service
+Check the box: All Billing actions (billing:*)
+Goto Policies > IAMUserBilling > Entities attached > attach > Select the IAM user you want to give the policy
+Goto IAM users > your IAM User > Add permission
+Search and Select the IAMUserBilling from the list
+
+Goto AWS console > Account > IAM user and role access to Billing information > Edit
+Check the box: Activate IAM Access
+
+
+Also, enale AWS Free Tier alerts in Billing preference.
+This will help avoid unexpected charges from using free tier resources.
+
+
+
+# Login with IAM User
+
+Goto IAM 
+Click on the user
+Under Security tab > Copy your IAM Console sign-in link
+https://149213082222.signin.aws.amazon.com/console
+Goto billing to confirm the IAMUserBilling policy created in the last video
+
+
+
+
+# Cloudwatch billing alarm (IAM user account)
+
+Cloudwatch is a service that helps us to monitor applications and services in AWS, in this case we want to use it to monitor our cost treshold or usage.
+
+
+Goto Billing Dashboard > Billing Preferences
+Activate CloudWatch billing alerts
+Goto to the console dashboard
+Set your region to East (N. Virginia) US-East-1: `this is important when configurring cloudwatch`
+Goto Services > Cloudwatch > Alarms > In Alarms > Create Alarm > Select Metric > Billing > Total Estimated Charge > Select USD > Select metric
+
+Step 1 
+
+Specify metric and conditions > Conditions
+Under Whenever Estimated Charges is: Select Greate/Equal
+Under than: Input your charge cap
+
+
+Under Send a notification to the following SNS (Simple Notification Service) topic: select Create new topic
+Give it a unique name e.g MyAWSBillingAlarm
+Enter your email endpoint
+Create topic
+Check your email and confirm the subsciption for the SNS
+
+Step 2
+
+Configure actions
+Set a Name and description e.g MyAWSBillingAlarm
+Next > Create alarm
+
+Goto All alarms to see the newly created alarm
+
+
+
+# Add AWS CLI
+
+We want to install aws cli
+Config the aws cli to use our accessKeyID and secreteKey
+With this, we will be able to access aws console services through the CLI
+
+`To install AWS CLI`
+Search google and follow the instructions on AWS official website
+
+https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html
+
+OR 
+
+Run the following commands in terminal
+
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+
+sudo installer -pkg ./AWSCLIV2.pkg -target /
+
+After successful installation, we need to setup our Access key ID,Secret access key. Which is in the csv file we downloaded while creating IAM user
+
+Access key ID: AKIASFPOK6JXFF5KDRYR
+Secret access key: nUzLbDDqZkJkRnOTzfx9nFlbZ0mdbNX9C53atD4N
+
+Run the following commands:
+
+aws configure
+Provide the relevant keys requested
+Set your region to us-east-1
+Set default output <empty>
+
+Run cat ~/.aws/credentials: to view you newly entered keys
+
+
+# Get a domain 
+
+We're going to buy 2 domain names, one for the backend app and the other for the frontend app.
+
+Then we'll used the domain names with AWS Route 53 and then allow the traffic from the load balancer to pass through the Route 53 domain that we'll set up.
+
+
+Purchase a domain name of your chosen
+Goto AWS Route 53
+Create a hosted zone using the domain name you purchased
+Select public hosted zone
+Get Started
+Some custom DNS would be generated for you after creating the hosted zone:
+
+Name servers
+ns-1226.awsdns-25.org
+ns-258.awsdns-32.com
+ns-1736.awsdns-25.co.uk
+ns-807.awsdns-36.net
+
+Add these DNS to your Custom DNS from your domain registrar and save. 
+
+NOTE: toyinda school DNS is ns1 & ns2.host-ww.net 
+
+
+
+
+# AWS Services to use
+
+Services we'll use to setup our infrastructure and deployment (note: deployment will be carried out from the management console)
+
+IAC (Infrastructure as Code) will be written using Terraform
+
+`Service to use`
+
+VPC (Virtual Private Cloud): 
+Allows us to logically isolate a section of the AWS public cloud i.e we'll be able to create a section of the AWS public cloud as Private for our use
+
+
+Subnet: 
+It provids us IP Addresses, it helps to to allow or prevent internet traffic into our instances.
+How to launch instance or services in the subnets 
+Helps to create Private and Public subnets
+
+
+Internet gateway: 
+Allows internet traffic into our VPC
+
+
+Route Table: 
+Allows traffic within the VPC, private subnets or public subnets.
+
+
+Elastic IP: 
+It's an elastic address that we can associate or assign (using NAT Gateways) with any EC2 Instance. If we launch our EC2 Instance from a public subnet and reboot the instance, the IP remains the same.
+
+Elastic IPs are assigned using a NAT Gateway
+
+
+NAT Gateway: 
+Provides outbound Internet connectivity from an Amazon Virtual Private Cloud (Amazon VPC). We can also connect multiple virtual networks together by creating a network.
+
+
+Security Groups:
+Are firewalls at the EC2 instance level
+
+
+Application Load Balancer (ALB): 
+This balances traffics that will be entering our EC2 Instances or servers. All traffic will pass through the ALB.
+
+Route 53: 
+AWS DNS service that we can use to point our domains to an endpoint such as an ELB or S3 bucket.
+
+
+AWS Certificate Manager (ACM):
+This allows our app to only use HTTPS
+- We'll need this if we want HTTPS on our website. ACM is used to issue SSL certificates which you then upload to your load balancer.
+
+
+Auto Scalling Group (ASG):
+It automatically scales up/down (add more/terminate instances) our EC2 instances when it hits a particular treshhold or CPU utilization of our application. You define how many instances you want running and what type they should be.
+
+
+Elastic Compute Cloud (EC2): 
+It is just like a normal CPU running in the cloud.
+EC2 is where you run your application code. You can have multiple EC2 instances running on one machine if they share resources like CPU cores etc.
+
+
+Elastic Cache:
+Used to store our Redis cache data
+
+
+Identity and Access Management (IAM) Roles and Policies:
+These allow us to give access to other AWS services without having to create users for each one of them individually.
+
+Simple Storage Service (S3):
+Amazon Simple Storage Service (Amazon S3), also known as Amazon S3, is object storage built for the Internet.
+
+
+CodeDeploy:
+Automated deployment of code changes to AWS EC2 instances and other resources.
+
+
+
+
+
+
+
+CloudFront: CDN service that is used by many websites to deliver their content faster than if they were hosted on your own servers.
+
+
+ELBs: Elastic Load Balancer is used to distribute incoming application requests across multiple servers.
+
+
+
+- Hosted Zone: A hosted zone is like a folder on your computer. You have subfolders inside of them called records which contain information about
+
+
+
+
+
+# AWS Infrastructure
+
+We want to look at how the Infrastructure we want to build will look like
+
+![Diagram](aws-infrastructure.png)
+
+
+
+
+
+# AWS Infrastructure Connections
+
+We want to look at how traffic will go through the infrastructure
+
+
+When users visits the frontend application, traffic will be routed through Cloud Front => Route will then go through our domain throug Route 53 => 
+
+
+![Diagram](aws-infrastructure-connections.png)
+
+
+
+
+
+
+
+# Backend Deployment: Infrastructure with Terraform
+
+Cloud infrastructure is a term used to describe the components needed for cloud computing, which includes hardware, abstracted resources, storage, and network resources. Think of cloud infrastructure as the tools needed to build a cloud. In order to host services and applications in the cloud, you need cloud infrastructure
+
+Terraform is an infrastructure as code tool that lets you build, change, and version cloud and on-prem resources safely and efficiently.
+Terraform allows us to define and manage a collection of related resources as code. This makes it easier for others in your team or organization to work.
+
+We used Terraform to build our AWS infrastructure, instead of creating them via the AWS console.
+
+
+
+# Terraform AWS S3 Bucket for remote state
+
+S3: Amazon Simple Storage Service
+
+Provider we'll be using: 
+https://registry.terraform.io/providers/hashicorp/aws/latest
+
+
+Remote State
+https://www.terraform.io/docs/language/state/remote.html
+
+With remote state, Terraform writes the state data to a remote data store, which can then be shared between all members of a team.
+
+AWS S3 Bucket: stores our remote terraform states
+
+State data (file): is information about your infrastructure. This state file keeps track of resources created by your configuration and maps them to real-world resources.
+
+Goto AWS consolse > S3
+Create a Bucket "chatly-app-terraform-state"
+Enable Bucket versioning
+
+Enter the chatly-app-terraform-state
+Create folders: develop, staging and production.
+
+develop => in here we'll store our terraform remote state for our development, staging and production environment.
+
+
+
+# Terraform variables
+
+Ref: https://developer.hashicorp.com/terraform/language/expressions/types
+
+We want to add our terrafom configurations 
+
+Create a dir deployment in your root dir
+Create a file 1-variables.tf
+Copy and paste the snippet provided
+
+Get your availability zone by running this cmd in terminal:
+
+aws ec2 describe-availability-zones --region us-east-1
+
+You'd see a list of zones e.g "ZoneName": "us-east-1a",
+
+
+
+
+# Terraform version and backend
+
+We want to setup our terraform required provider which is AWS, and the backend.
+
+
+Create a file 2-version.tf in the deployment dir
+Create a file 3-main.tf
+
+
+
+# VPC and Subnets
+
+We want to create our VPC using Terraform instead of creating it directly from the AWS Console
+
+`With AWS Console`
+Goto AWS console
+Search for VPC
+Create VPC > VPC Only
+
+`With Terraform`
+Create a file 4-vpc.tf, 5-subnets.tf in the deployment dir
+
+
+# Internet gateway and route tables
+
+Internet gateway allows internet into our VPC, we want to create IG and attach it to our VPC
+
+Create files 6-igw.tf, 7-public_route_table.tf
+
+
+# Elastic IP and NAT Gateway
+
+Create files 8-elastic_ips.tf, 9-nat_gateway.tf, 10-private_route_table.tf
+
+
+# Security Groups
+A security group is a set of firewall rules that control the traffic to your load balancer
+We want to create security groups to restrict access to our resources (Bastion Host, ALB, ASG => EC2 Instance, ElastiCache)
+
+Inbound rules (ingress): rules that allows traffic to the resources
+Outbound rules (egress): rules that allows traffic out of the resources
+
+
+Create files 11-security_groups.tf, 
+
+
+
+# Application load balancer target group
+
+A target group tells a load balancer where to direct traffic to, such as EC2 instances; fixed IP addresses; or AWS Lambda functions; ALB; using specified protocols and ports.
+
+Before we can create our ALB, we need to create some resources:
+
+ALB Target Group
+Route 53
+Certficates (HTTPS), then use the cert in
+ALB
+
+
+Create files 12-alb_target_group.tf, 13-route53.tf
+
+
+# Route53 Certificate
+
+AWS Certificate Manager, for SSL Provisioning.
+
+Todo: 
+
+Create the certificate
+Add it to our hosted zone record
+Validate the certificate
+
+Create files 14-route53_certificate.tf
+
+
+# Application Load Balancer
+
+We want to create our load balancer
+http & https listeners
+http redirection to https
+ALB listener rules
+
+A listener is a process that checks for connection requests using the port and protocol you configure. The rules that you define for a listener determine how the load balancer routes requests to its registered targets.
+
+Create a file 15-alb.tf
+
+
+# Application Load Balancer Route53 Alias 
+
+
+We want to create a new record in our hosted zone (toyindaschools.com.ng) for our Application Load Balancer
+In order to let our domain or hosted zone to know that traffic is going to be coming in through the ALB
+
+
+Create a file 16-alb_route53_alias.tf
+
+
+# IAM EC2 role
+
+We want to create some policy resources and some rules (admin users) i.e EC2 role and instance profile
+Which will be added to our EC2 instance when they're created 
+
+Create files 17-iam_ec2_roles.tf 
+
+
+
+# ElastiCache (Redis Cluster on AWS console)
+
+Create a file 18-elasticache.tf
+
+# Update .env file script
+
+We want to write a shell script to dynamically update our REDIS_HOST value in our .env file, which we'll save in our S3 Bucket with the URL of the ElastiCache resource we just created using Terraform 
+
+Steps to reproduce:
+Create an S3 bucket
+Push the .env file in the S3 bucket (inside EC2 instance)
+Before the app starts, we get the .env file from the S3 bucket
+Edit the .env file with the URL of the ElastiCache resource we just created
+Save it back into the S3 bucket
+
+
+Create a dir userdata in the deployment dir 
+Create a file update-env-file.sh
+
+
+# EC2 launch config
+
+AMI: Amazon Machine Image
+We dynamically get the AMI using terraform
+
+
+A launch config (we used this) or launch template is needed if we want to create Autoscaling groups
+
+Create file 19-ami-data.tf, 20-ec2_launch_config.tf
+Goto Amazon console > EC2 > Create a new key pair and keep it safe
+
+
+
+# EC2 User data script
+
+This file consists of tools (Node.js, Git, PM2, Docker, Checkout our branch, Redis etc) that we'd need for our app, inside this file we will install them.
+So, everytime a new instance is launched using the autoscaling group we want to exec those commands (i.e commands to install the tools we need)
+
+PM2: A production process manager for Node. js applications that has a built-in load balancer. PM2 enables you to keep applications alive forever, reloads them without downtime, helps you to manage application logging, monitoring, and clustering.
+
+Yellowdog Updater Modified (YUM) is a free and open-source command-line package-management utility for computers running the Linux operating system using the RPM Package Manager
+
+https://rpm.nodesource.com/
+
+
+Create a file user-data.sh in the userdata dir
+Update the user_date prop in 20-ec2_launch_config.tf file the user-data.sh file we just created 
+
+
+# Autoscaling Group
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# *** TO RE-WATCH
+1. All Jest testing videos
+2. Learn Git
+
+
+
+
+# What I've deduced for testing
+
+In testing, we ensure each method in our controllers are being called
+The controllers are served with data for testing using the mock files
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
