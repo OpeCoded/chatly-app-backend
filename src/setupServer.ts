@@ -61,7 +61,7 @@ export class ChattyServer {
     /*
         CALLING OUR SECURITY MIDDLEWARES
         app.use: used to call middlewares to be used in our app i.e Application (app variable)
-        name: name given to the security middleware
+        name: name given to the security middleware (cookieSession)
         keys: used to sign and verify cookies values
         maxAge: the amount of time the cookie will be valied for (e.g 24 * 7 * 3600000 = 7 days)
         origin: client url https://localhost:3000 (local/live)

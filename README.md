@@ -2480,6 +2480,236 @@ Create a file .env.development.example just to show users what our env vars look
 
 
 
+# Backend Deployment AWS Setup
+
+
+Goto aws.amazon.com
+Create an account if you don't have (Free Tier)
+
+
+# Create IAM User (on root user account)
+
+IAM: Identity and Access Management
+
+Reason: you're not to access AWS Services with your Root account, so we're to create IAM user to access AWS services
+
+
+US East (N. Virginia - us-east-1 : REGION - AVAILABLITY ZONE
+
+
+On AWS Console
+Go To Services > Security & Identity > Users > IAM or just search for IAM
+
+*In production, Enable multi-factor authentication (MFA)
+
+
+Creating an IAM users
+
+Access Management > Users > Create User
+Set AdministratorAccess Permission for the newly created user, this will allow the user to have access to all AWS Services
+Create Access Key for the user > Select the Command Line Interface (CLI) use case
+Download the key as .csv file
+
+
+# Add billing policy to IAM User (on root user account)
+
+Goto IAM Dashboard > Policies
+Create Policy IAMUserBilling
+Search for and select billing service
+Check the box: All Billing actions (billing:*)
+Goto Policies > IAMUserBilling > Entities attached > attach > Select the IAM user you want to give the policy
+Goto IAM users > your IAM User > Add permission
+Search and Select the IAMUserBilling from the list
+
+Goto AWS console > Account > IAM user and role access to Billing information > Edit
+Check the box: Activate IAM Access
+
+
+Also, enale AWS Free Tier alerts in Billing preference.
+This will help avoid unexpected charges from using free tier resources.
+
+
+
+# Login with IAM User
+
+Goto IAM 
+Click on the user
+Under Security tab > Copy your IAM Console sign-in link
+https://149213082222.signin.aws.amazon.com/console
+Goto billing to confirm the IAMUserBilling policy created in the last video
+
+
+
+
+# Cloudwatch billing alarm (IAM user account)
+
+Cloudwatch is a service that helps us to monitor applications and services in AWS, in this case we want to use it to monitor our cost treshold or usage.
+
+
+Goto Billing Dashboard > Billing Preferences
+Activate CloudWatch billing alerts
+Goto to the console dashboard
+Set your region to East (N. Virginia) US-East-1: `this is important when configurring cloudwatch`
+Goto Services > Cloudwatch > Alarms > In Alarms > Create Alarm > Select Metric > Billing > Total Estimated Charge > Select USD > Select metric
+
+Step 1 
+
+Specify metric and conditions > Conditions
+Under Whenever Estimated Charges is: Select Greate/Equal
+Under than: Input your charge cap
+
+
+Under Send a notification to the following SNS (Simple Notification Service) topic: select Create new topic
+Give it a unique name e.g MyAWSBillingAlarm
+Enter your email endpoint
+Create topic
+Check your email and confirm the subsciption for the SNS
+
+Step 2
+
+Configure actions
+Set a Name and description e.g MyAWSBillingAlarm
+Next > Create alarm
+
+Goto All alarms to see the newly created alarm
+
+
+
+# Add AWS CLI
+
+We want to install aws cli
+Config the aws cli to use our accessKeyID and secreteKey
+With this, we will be able to access aws console services through the CLI
+
+`To install AWS CLI`
+Search google and follow the instructions on AWS official website
+
+https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html
+
+OR 
+
+Run the following commands in terminal
+
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+
+sudo installer -pkg ./AWSCLIV2.pkg -target /
+
+After successful installation, we need to setup our Access key ID,Secret access key. Which is in the csv file we downloaded while creating IAM user
+
+Access key ID: AKIASFPOK6JXFF5KDRYR
+Secret access key: nUzLbDDqZkJkRnOTzfx9nFlbZ0mdbNX9C53atD4N
+
+Run the following commands:
+
+aws configure
+Provide the relevant keys requested
+Set your region to us-east-1
+Set default output <empty>
+
+Run cat ~/.aws/credentials: to view you newly entered keys
+
+
+# Get a domain 
+
+We're going to buy 2 domain names, one for the backend app and the other for the frontend app.
+
+Then we'll used the domain names with AWS Route 53 and then allow the traffic from the load balancer to pass through the Route 53 domain that we'll set up.
+
+
+Purchase a domain name of your chosen
+Goto AWS Route 53
+Create a hosted zone using the domain name you purchased
+Select public hosted zone
+Get Started
+Some custom DNS would be generated for you after creating the hosted zone:
+
+Name servers
+ns-1226.awsdns-25.org
+ns-258.awsdns-32.com
+ns-1736.awsdns-25.co.uk
+ns-807.awsdns-36.net
+
+Add these DNS to your Custom DNS from your domain registrar and save. 
+
+NOTE: toyinda school DNS is ns1 & ns2.host-ww.net 
+
+
+
+
+# AWS Services to use
+
+Services we'll use to setup our infrastructure and deployment (note: deployment will be carried out from the management console)
+
+IAC (Infrastructure as Code) will be written using Terraform
+
+`Service to use`
+
+VPC (Virtual Private Cloud): 
+Allows us to logically isolate a section of the AWS public cloud i.e we'll be able to create a section of the AWS public cloud as Private for our use
+
+
+Subnet: 
+It provids us IP Addresses, it helps to to allow or prevent internet traffic into our instances.
+How to launch instance or services in the subnets 
+Helps to create Private and Public subnets
+
+
+Internet gateway: 
+Allows internet traffic into our VPC
+
+
+Route Table: 
+Allows traffic within the VPC, private subnets or public subnets.
+
+
+Elastic IP: 
+It's an elastic address that we can associate or assign (using NAT Gateways) with any EC2 Instance. If we launch our EC2 Instance from a public subnet and reboot the instance, the IP remains the same.
+
+Elastic IPs are assigned using a NAT Gateway
+
+
+NAT Gateway: 
+Provides outbound Internet connectivity from an Amazon Virtual Private Cloud (Amazon VPC). We can also connect multiple virtual networks together by creating a network.
+
+
+Security Groups:
+Are firewalls at the EC2 instance level
+
+
+Application Load Balancer (ALB): 
+This balances traffics that will be entering our EC2 Instances or servers. All traffic will pass through the ALB.
+
+Route 53: 
+AWS DNS service that we can use to point our domains to an endpoint such as an ELB or S3 bucket.
+
+
+AWS Certificate Manager (ACM):
+This allows our app to only use HTTPS
+- We'll need this if we want HTTPS on our website. ACM is used to issue SSL certificates which you then upload to your load balancer.
+
+
+Auto Scalling Group (ASG):
+It automatically scales up/down (add more/terminate instances) our EC2 instances when it hits a particular treshhold or CPU utilization of our application. You define how many instances you want running and what type they should be.
+
+
+Elastic Compute Cloud (EC2): 
+It is just like a normal CPU running in the cloud.
+EC2 is where you run your application code. You can have multiple EC2 instances running on one machine if they share resources like CPU cores etc.
+
+
+Elastic Cache:
+Used to store our Redis cache data
+
+
+Identity and Access Management (IAM) Roles and Policies:
+These allow us to give access to other AWS services without having to create users for each one of them individually.
+
+Simple Storage Service (S3):
+Amazon Simple Storage Service (Amazon S3), also known as Amazon S3, is object storage built for the Internet.
+
+
+CodeDeploy:
+Automated deployment of code changes to AWS EC2 instances and other resources.
 
 
 
@@ -2487,6 +2717,38 @@ Create a file .env.development.example just to show users what our env vars look
 
 
 
+CloudFront: CDN service that is used by many websites to deliver their content faster than if they were hosted on your own servers.
+
+
+ELBs: Elastic Load Balancer is used to distribute incoming application requests across multiple servers.
+
+
+
+- Hosted Zone: A hosted zone is like a folder on your computer. You have subfolders inside of them called records which contain information about
+
+
+
+
+
+# AWS Infrastructure
+
+We want to look at how the Infrastructure we want to build will look like
+
+![Diagram](aws-infrastructure.png)
+
+
+
+
+
+# AWS Infrastructure Connections
+
+We want to look at how traffic will go through the infrastructure
+
+
+When users visits the frontend application, traffic will be routed through Cloud Front => Route will then go through our domain throug Route 53 => 
+
+
+![Diagram](aws-infrastructure-connections.png)
 
 
 
@@ -2494,8 +2756,220 @@ Create a file .env.development.example just to show users what our env vars look
 
 
 
+# Backend Deployment: Infrastructure with Terraform
+
+Cloud infrastructure is a term used to describe the components needed for cloud computing, which includes hardware, abstracted resources, storage, and network resources. Think of cloud infrastructure as the tools needed to build a cloud. In order to host services and applications in the cloud, you need cloud infrastructure
+
+Terraform is an infrastructure as code tool that lets you build, change, and version cloud and on-prem resources safely and efficiently.
+Terraform allows us to define and manage a collection of related resources as code. This makes it easier for others in your team or organization to work.
+
+We used Terraform to build our AWS infrastructure, instead of creating them via the AWS console.
 
 
+
+# Terraform AWS S3 Bucket for remote state
+
+S3: Amazon Simple Storage Service
+
+Provider we'll be using: 
+https://registry.terraform.io/providers/hashicorp/aws/latest
+
+
+Remote State
+https://www.terraform.io/docs/language/state/remote.html
+
+With remote state, Terraform writes the state data to a remote data store, which can then be shared between all members of a team.
+
+AWS S3 Bucket: stores our remote terraform states
+
+State data (file): is information about your infrastructure. This state file keeps track of resources created by your configuration and maps them to real-world resources.
+
+Goto AWS consolse > S3
+Create a Bucket "chatly-app-terraform-state"
+Enable Bucket versioning
+
+Enter the chatly-app-terraform-state
+Create folders: develop, staging and production.
+
+develop => in here we'll store our terraform remote state for our development, staging and production environment.
+
+
+
+# Terraform variables
+
+Ref: https://developer.hashicorp.com/terraform/language/expressions/types
+
+We want to add our terrafom configurations 
+
+Create a dir deployment in your root dir
+Create a file 1-variables.tf
+Copy and paste the snippet provided
+
+Get your availability zone by running this cmd in terminal:
+
+aws ec2 describe-availability-zones --region us-east-1
+
+You'd see a list of zones e.g "ZoneName": "us-east-1a",
+
+
+
+
+# Terraform version and backend
+
+We want to setup our terraform required provider which is AWS, and the backend.
+
+
+Create a file 2-version.tf in the deployment dir
+Create a file 3-main.tf
+
+
+
+# VPC and Subnets
+
+We want to create our VPC using Terraform instead of creating it directly from the AWS Console
+
+`With AWS Console`
+Goto AWS console
+Search for VPC
+Create VPC > VPC Only
+
+`With Terraform`
+Create a file 4-vpc.tf, 5-subnets.tf in the deployment dir
+
+
+# Internet gateway and route tables
+
+Internet gateway allows internet into our VPC, we want to create IG and attach it to our VPC
+
+Create files 6-igw.tf, 7-public_route_table.tf
+
+
+# Elastic IP and NAT Gateway
+
+Create files 8-elastic_ips.tf, 9-nat_gateway.tf, 10-private_route_table.tf
+
+
+# Security Groups
+A security group is a set of firewall rules that control the traffic to your load balancer
+We want to create security groups to restrict access to our resources (Bastion Host, ALB, ASG => EC2 Instance, ElastiCache)
+
+Inbound rules (ingress): rules that allows traffic to the resources
+Outbound rules (egress): rules that allows traffic out of the resources
+
+
+Create files 11-security_groups.tf, 
+
+
+
+# Application load balancer target group
+
+A target group tells a load balancer where to direct traffic to, such as EC2 instances; fixed IP addresses; or AWS Lambda functions; ALB; using specified protocols and ports.
+
+Before we can create our ALB, we need to create some resources:
+
+ALB Target Group
+Route 53
+Certficates (HTTPS), then use the cert in
+ALB
+
+
+Create files 12-alb_target_group.tf, 13-route53.tf
+
+
+# Route53 Certificate
+
+AWS Certificate Manager, for SSL Provisioning.
+
+Todo: 
+
+Create the certificate
+Add it to our hosted zone record
+Validate the certificate
+
+Create files 14-route53_certificate.tf
+
+
+# Application Load Balancer
+
+We want to create our load balancer
+http & https listeners
+http redirection to https
+ALB listener rules
+
+A listener is a process that checks for connection requests using the port and protocol you configure. The rules that you define for a listener determine how the load balancer routes requests to its registered targets.
+
+Create a file 15-alb.tf
+
+
+# Application Load Balancer Route53 Alias 
+
+
+We want to create a new record in our hosted zone (toyindaschools.com.ng) for our Application Load Balancer
+In order to let our domain or hosted zone to know that traffic is going to be coming in through the ALB
+
+
+Create a file 16-alb_route53_alias.tf
+
+
+# IAM EC2 role
+
+We want to create some policy resources and some rules (admin users) i.e EC2 role and instance profile
+Which will be added to our EC2 instance when they're created 
+
+Create files 17-iam_ec2_roles.tf 
+
+
+
+# ElastiCache (Redis Cluster on AWS console)
+
+Create a file 18-elasticache.tf
+
+# Update .env file script
+
+We want to write a shell script to dynamically update our REDIS_HOST value in our .env file, which we'll save in our S3 Bucket with the URL of the ElastiCache resource we just created using Terraform 
+
+Steps to reproduce:
+Create an S3 bucket
+Push the .env file in the S3 bucket (inside EC2 instance)
+Before the app starts, we get the .env file from the S3 bucket
+Edit the .env file with the URL of the ElastiCache resource we just created
+Save it back into the S3 bucket
+
+
+Create a dir userdata in the deployment dir 
+Create a file update-env-file.sh
+
+
+# EC2 launch config
+
+AMI: Amazon Machine Image
+We dynamically get the AMI using terraform
+
+
+A launch config (we used this) or launch template is needed if we want to create Autoscaling groups
+
+Create file 19-ami-data.tf, 20-ec2_launch_config.tf
+Goto Amazon console > EC2 > Create a new key pair and keep it safe
+
+
+
+# EC2 User data script
+
+This file consists of tools (Node.js, Git, PM2, Docker, Checkout our branch, Redis etc) that we'd need for our app, inside this file we will install them.
+So, everytime a new instance is launched using the autoscaling group we want to exec those commands (i.e commands to install the tools we need)
+
+PM2: A production process manager for Node. js applications that has a built-in load balancer. PM2 enables you to keep applications alive forever, reloads them without downtime, helps you to manage application logging, monitoring, and clustering.
+
+Yellowdog Updater Modified (YUM) is a free and open-source command-line package-management utility for computers running the Linux operating system using the RPM Package Manager
+
+https://rpm.nodesource.com/
+
+
+Create a file user-data.sh in the userdata dir
+Update the user_date prop in 20-ec2_launch_config.tf file the user-data.sh file we just created 
+
+
+# Autoscaling Group
 
 
 
