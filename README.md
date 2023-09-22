@@ -2596,8 +2596,8 @@ sudo installer -pkg ./AWSCLIV2.pkg -target /
 
 After successful installation, we need to setup our Access key ID,Secret access key. Which is in the csv file we downloaded while creating IAM user
 
-Access key ID: AKIASFPOK6JXFF5KDRYR
-Secret access key: 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
+Access key ID: 
+Secret access key: 
 
 Run the following commands:
 
