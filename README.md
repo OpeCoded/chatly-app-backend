@@ -2596,10 +2596,10 @@ sudo installer -pkg ./AWSCLIV2.pkg -target /
 
 After successful installation, we need to setup our Access key ID,Secret access key. Which is in the csv file we downloaded while creating IAM user
 
-Access key ID: AKIASFPOK6JXFF5KDRYR
-Secret access key: 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
+Access key ID: <Alphanumeric-uppercase-string-like>
+Secret access key: <Alphanumeric-lower-case-sting-like>
 
-Run the following commands:
+Run the following commands TO LOGIN TO AWS CONSOLE via terminal:
 
 aws configure
 Provide the relevant keys requested
@@ -2924,6 +2924,12 @@ Create files 17-iam_ec2_roles.tf
 
 Create a file 18-elasticache.tf
 
+Note: add the below in your resource params
+
+engine                        = "redis"
+engine_version                = "6.x"
+
+
 # Update .env file script
 
 We want to write a shell script to dynamically update our REDIS_HOST value in our .env file, which we'll save in our S3 Bucket with the URL of the ElastiCache resource we just created using Terraform 
@@ -2948,8 +2954,8 @@ We dynamically get the AMI using terraform
 
 A launch config (we used this) or launch template is needed if we want to create Autoscaling groups
 
-Create file 19-ami-data.tf, 20-ec2_launch_config.tf
-Goto Amazon console > EC2 > Create a new key pair and keep it safe
+Create files 19-ami-data.tf, 20-ec2_launch_config.tf
+Goto Amazon console > EC2 > Create a new key pair chatlyappKeyPair and keep it safe (chatlyappKeyPair.pem)
 
 
 
@@ -2970,6 +2976,131 @@ Update the user_date prop in 20-ec2_launch_config.tf file the user-data.sh file 
 
 
 # Autoscaling Group
+
+We want to create our ASG and Bastion Host
+
+Create files 21-asg.tf, 23-bastion_hosts.tf
+Note: we'll add file 22-something.tf later. It's going to be for autoscaling group policy
+
+
+# Create env file S3 Bucket
+
+Goto AWS Console > S3
+Create a bucket chatlyapp-env-files
+Block all public access
+Enable bukcet versioning
+Create Bucket
+
+Goto to the newly created chatlyapp-env-files bucket
+Create 3 subfolders develop, staging and production (this will be used to hold the different .env files for each enviroment)
+
+Renamen .env.production to .env.develop 
+Ignore .env.develop in .gitignore file
+
+Goto .env.develop 
+Update the API_URL value to https://api.dev.toyindaschools.com.ng/api/v1 (Note: always upload the updated .env.develop file into the s3 bucket
+)
+
+Now, we want to upload our .env.develop file to our S3 bucket/develop in form of a zip file.
+Run the cmd in terminal in the root dir:
+
+zip env-file.zip .env.develop `action file-result-name file-to-zip`
+aws --region us-east-1 s3 cp env-file.zip s3://chatlyapp-env-files/develop/  `this uploads the zip file to our S3 chatlyapp-env-files develop subfolder (ensure you put the last "/" ). Exp => cp: copy | s3 path to copy to`
+
+
+# Run terraform apply locally 
+
+Open the deployment dir in terminal
+
+Run the commands:
+
+# Ensure you commit your code changes to the deployment branch, 'cus this is the branch we'll be cloning into our EC2 before running the below commands.
+
+terraform init `initializes the deployment dir with terraform`
+terrafrom fmt `this formats the .tf files`
+terraform validate `it checks if our configuration is in accordance with the terraform version we are using`
+terraform plan `this shows us the resources that would be created`
+terraform apply -auto-approve `this creates our infrastructures/resources on aws`
+
+
+
+OTHERS CMDs
+sudo grep cloud-init /var/log/messages `shows logs from ec2, use this monitor operetions performed`
+sudo grep cloud-init /var/log/cloud-init.log
+sudo grep cloud-init /var/log/cloud-init-output.log
+
+
+terraform apply -auto-approve=true `creates or updates the this creates our infrastructures/resources according to what was defined in our tf files.`
+terraform destroy `this destroys all resources created`
+terraform destroy -target='<resource.name>' `destroys a specific infrastructure/resource`
+
+
+* Now we want to connect to our EC2 Instance via our Bastion Host (chatlyapp-server-default-bastion-host) because the EC2 (EC2-ASG-default) is in the Private Subnet
+Our EC2 (EC2-ASG-default) runs our application, it houses our backend app.
+
+We'd login to the Bastion Host via SSH and then login to the EC2 instance in it
+
+Goto EC2
+Select the Bastion Host (chatlyapp-server-default-bastion-host) > Connect > SSH Client
+Open a new terminal
+Cd to where you have your chatlyappKeyPair.pem file
+Run the CMDs:
+chmod 400 chatlyappKeyPair.pem
+
+** Things to do
+Update your ip in the .tf file /32
+ZIP YOUR ENTIRE SOURCE FILE for back up
+Commit your current branch, copy your current branch to deployment branch, pull deployment branch from remote to local.
+Run all terraform commands
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# AWS USEFULL COMMANDS (to delete existing resources)
+
+aws iam delete-instance-profile --instance-profile-name <instance-profile-name> `deletes instance profile`
+aws autoscaling delete-launch-configuration --launch-configuration-name <launch-config-name> `deletes launch config name`
+aws autoscaling delete-auto-scaling-group --auto-scaling-group-name <auto_scalling_group_name> `deletes auto scaling group`
+
+
+
+
+# GIT COMMANDS USED IN THE COURSE
+
+
+git add . `Adds all files to be pushed`
+git commit -m "Feature: Implemented Auth Feature" `Git commit message`
+git push origin feature/auth-feature `Pushes your update into the new branch "feature/auth-feature" NB: deny any prompt that comes`
+Visit the PR (Pull Request) link generated in the cmd i.e https://github.com/OpeCoded/chatly-app-backend/pull/new/feature/auth-feature `Pulls back the code you pushed to remote to local`
+Click on Create PR > Merge Confirm
+
+
+
+git checkout <branch.name> `Switches from one branch to the other`
+git checkout -b feature/auth-feature `Creates a new branch for our auth-feature [everything related to auth will be in this branch]`
+
+
+git merge <branch.name> `copies the content of the current branch you're- into the specified <branch.name> (Ensure you update your current branch before running this)`
+git checkout -b <local_branch_name> origin/<remote_branch_name> `to checkout (create) a remote branch as a local branch`
+
+
+git fetch origin <branch.to.fetch> `fetch or pull a remote branch that does not exist in the local to local.`
+git branch -r `list all REMOTE branches you've created, hit q to exit what is displayed`
+git branch -a `list all LOCAL & REMOTE branches you've created, hit q to exit what is displayed`
+
+`copies the content of a remote branch to another branch`
+git checkout <destination-branch>
+git pull origin <source-branch>
 
 
 
