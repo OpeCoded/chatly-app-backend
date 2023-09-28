@@ -19,7 +19,7 @@ aws s3 sync s3://chatlyapp-env-files/develop . # We defined a bucket (chatlyapp-
 unzip env-file.zip # unzip the zip file
 cp .env.develop .env # copies the content of .env.develop file to a new file .env
 rm .env.develop # removes (delete) the .env.develop file
-sed -i -e "s|\(^REDIS_HOST=\).*|REDIS_HOST=redis://$ELASTICACHE_ENDPOINT:6379|g" .env # updates the value of REDIS_HOST in our .env file with the value of the ELASTICACHE_ENDPOINT (elasticache url in 18-elasticache.tf)
+sed -i -e "s|\(^REDIS_HOST=\).*|REDIS_HOST=redis://chatlyapp-server-default-redis.f0a2e1.ng.0001.use1.cache.amazonaws.com:6379|g" .env # updates the value of REDIS_HOST in our .env file with the value of the ELASTICACHE_ENDPOINT (elasticache url in 18-elasticache.tf)
 rm -rf env-file.zip # removes the zip file containing the .env file
 cp .env .env.develop # copies the updated .env file to .env.develop
 zip env-file.zip .env.develop # zip the new file .env.develop
