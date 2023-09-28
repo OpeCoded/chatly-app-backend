@@ -3026,13 +3026,14 @@ terraform apply -auto-approve `this creates our infrastructures/resources on aws
 
 OTHERS CMDs
 sudo grep cloud-init /var/log/messages `shows logs from ec2, use this monitor operetions performed`
-sudo grep cloud-init /var/log/cloud-init.log
-sudo grep cloud-init /var/log/cloud-init-output.log
+cat /var/log/cloud-init.log
+cat /var/log/cloud-init-output.log
 
 
 terraform apply -auto-approve=true `creates or updates the this creates our infrastructures/resources according to what was defined in our tf files.`
 terraform destroy `this destroys all resources created`
-terraform destroy -target='<resource.name>' `destroys a specific infrastructure/resource`
+terraform apply -target=<resource_name> `creates a specific infrastructure/resource`
+terraform destroy -target='<resource_name>' `destroys a specific infrastructure/resource`
 
 
 * Now we want to connect to our EC2 Instance via our Bastion Host (chatlyapp-server-default-bastion-host) because the EC2 (EC2-ASG-default) is in the Private Subnet
@@ -3041,17 +3042,200 @@ Our EC2 (EC2-ASG-default) runs our application, it houses our backend app.
 We'd login to the Bastion Host via SSH and then login to the EC2 instance in it
 
 Goto EC2
-Select the Bastion Host (chatlyapp-server-default-bastion-host) > Connect > SSH Client
+Select the Bastion Host (chatlyapp-server-default-bastion-host) > Connect > SSH Client tab
 Open a new terminal
 Cd to where you have your chatlyappKeyPair.pem file
-Run the CMDs:
-chmod 400 chatlyappKeyPair.pem
+Run the CMDs (can be copied from the SSH tab):
+chmod 400 chatlyappKeyPair.pem `makes the key pair not accessible by the public`
+ssh -i "chatlyappKeyPair.pem" ec2-user@ec2-34-237-136-17.compute-1.amazonaws.com `ssh into the bastion host instance`
+Answer the prompt: yes
+pwd `this will show the present working dir i.e /home/ec2-user which is our Bastion Host path`
 
-** Things to do
-Update your ip in the .tf file /32
-ZIP YOUR ENTIRE SOURCE FILE for back up
-Commit your current branch, copy your current branch to deployment branch, pull deployment branch from remote to local.
-Run all terraform commands
+Now, we want to SSH into our EC2 instance via the Bastion Host using the same keypair chatlyappKeyPair.pem because EC2 doesn't allow http or https traffic into it.
+
+Firstly, we want to copy the content of the chatlyappKeyPair.pem.
+
+Open a new terminal window profile
+Cd to where you have your chatlyappKeyPair.pem file
+cat chatlyappKeyPair.pem `displays the content of the keypair file`
+Copy the content excluding the "%" symbol
+Goto the terminal where you have your Bastion Host running and the CMD below
+nano chatlyappKeyPair.pem
+Paste the key pair content that we copy
+Ctrl + O `save file`
+Enter `accept file name`
+Ctrl + X `exit nano`
+chmod 400 chatlyappKeyPair.pem `to block public access to the file`
+
+
+Goto EC2 instance (EC2-ASG-default) > Connect > SSH Client tab
+Run cmds
+ssh -i "chatlyappKeyPair.pem" ec2-user@10.0.3.191 `Note: the ip of the EC2 instance may change, you have to go back and recopy this command`
+Enter yes for the prompt
+ls `this displays the files in the EC2. By now the chatly-app-backend folder we cloned in our user-data file should be there`
+
+Check if you have a build folder listed
+*** In this case I (Ope) couldn't find my build folder
+I discovered that the user-data.sh and update-env-file.sh did not run when I ran terraform apply because the SUDO command wasn't added and the Node js being installed too is deprecated.
+
+Node Js for Amazon Linux 2: https://github.com/nodesource/distributions#amazon-linux-versions
+
+Solution:
+
+I ran each line of codes in the files (user-data.sh and update-env-file.sh) in my EC2 instance
+Below is how the files should look like
+
+# user-data.sh
+
+#!/bin/bash
+
+function program_is_installed {
+  local return_=1
+
+  type $1 >/dev/null 2>&1 || { local return_=0; }
+  echo "$return_"
+}
+
+sudo yum update -y
+sudo yum install ruby -y
+sudo yum install wget -y
+cd /home/ec2-user
+wget https://aws-codedeploy-eu-central-1.s3.eu-central-1.amazonaws.com/latest/install
+sudo chmod +x ./install
+sudo ./install auto
+
+if [ $(program_is_installed node) == 0 ]; then
+  sudo yum install https://rpm.nodesource.com/pub_16.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm -y
+  sudo yum install nodejs -y --setopt=nodesource-nodejs.module_hotfixes=1
+  node -v
+fi
+
+if [ $(program_is_installed git) == 0 ]; then
+  sudo yum install git -y
+fi
+
+if [ $(program_is_installed docker) == 0 ]; then
+  sudo amazon-linux-extras install docker -y
+  sudo systemctl start docker
+  sudo docker run --name chatlyapp-redis -p 6379:6379 --restart always --detach redis
+fi
+
+if [ $(program_is_installed pm2) == 0 ]; then
+  sudo npm install -g pm2
+fi
+
+cd /home/ec2-user
+
+git clone -b development https://github.com/OpeCoded/chatly-app-backend.git
+cd chatly-app-backend
+sudo npm install
+aws s3 sync s3://chatlyapp-env-files/develop .
+sudo unzip env-file.zip
+sudo cp .env.develop .env
+sudo npm run build
+sudo npm run start
+
+
+# update-env-file.sh
+
+#!/bin/bash
+
+function program_is_installed {
+  local return_=1
+
+  type $1 >/dev/null 2>&1 || { local return_=0; }
+  echo "$return_"
+}
+
+if [ $(program_is_installed zip) == 0 ]; then
+  apk update
+  apk add zip
+fi
+
+aws s3 sync s3://chatlyapp-env-files/develop .
+sudo unzip env-file.zip
+sudo cp .env.develop .env
+sudo rm .env.develop
+sudo sed -i -e "s|\(^REDIS_HOST=\).*|REDIS_HOST=redis://$ELASTICACHE_ENDPOINT:6379|g" .env
+sudo rm -rf env-file.zip
+sudo cp .env .env.develop
+sudo zip env-file.zip .env.develop
+sudo aws --region us-east-1 s3 cp env-file.zip s3://chatlyapp-env-files/develop
+sudo rm -rf .env*
+sudo rm -rf env-file.zip
+
+
+* So, you can replace this shell script with the ones in the source file
+
+If you encounter any issue like `FATAL ERROR: Ineffective mark-compacts near heap limit Allocation` just paste the below script in your EC2 command line
+
+export NODE_OPTIONS="--max-old-space-size=8192"
+
+
+
+
+* After all this, you should be able to access your backend api at https://api.dev.toyindaschools.com.ng/health
+
+
+# IF YOU NOTICED YOUR EC2 INSTANCE GETS TERMINATED AUTOMATICALLY, IT'S BECAUSE OF ASG. FOLLOW THE INSTRUCTIONS BELOW TO FIX
+
+
+To prevent Auto Scaling groups from terminating EC2 instances, you can follow these steps:
+
+1. Open the Amazon EC2 console.
+
+2. Navigate to the "Auto Scaling Groups" section.
+
+3. Select the Auto Scaling group that you want to modify.
+
+4. Choose "Actions" and then "Edit".
+
+5. In the "Group Details" section, locate the "Termination Policies" option.
+
+6. By default, the termination policy is set to "Default". To prevent instances from being terminated, you can modify the termination policy.
+
+   - If you want to prevent any instance from being terminated, select the "OldestInstance" termination policy. This policy ensures that the oldest instance in the Auto Scaling group is never terminated.
+   
+   - If you want to prevent instances from being terminated randomly, you can create a custom termination policy. For example, you can create a policy that prioritizes terminating instances based on specific criteria such as instance age, instance ID, or other attributes.
+
+7. After selecting the desired termination policy, click "Save" to apply the changes.
+
+By modifying the termination policy of the Auto Scaling group, you can control how instances are selected for termination. Keep in mind that if you set the termination policy to prevent all instances from being terminated, it may impact the scaling and availability of your application. Ensure that you have considered the implications and requirements of your specific use case before modifying the termination policy.
+
+Please note that these steps apply to preventing termination within the Auto Scaling group. They do not prevent termination initiated manually or through other means outside of the Auto Scaling group.
+
+
+# Access ElastiCache in the Private Subnet using command line
+
+If for some reasons your EC2 instance isn't working, check the logs.
+
+`Checking EC2 logs`
+
+
+SSH into the instance and run the cmds
+cat /var/log/cloud-init.log
+sudo cat /var/log/cloud-init-output.log `this displays the logs for the commands we wrote in our user-data.sh script` 
+
+
+* Access ElastiCache
+
+Go back to your bastion host, if you're in EC2 run `exit` cmd
+We need to install Redis CLI so as to be able to access ElastiCache `https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/nodes-connecting.html`
+
+Run the following cmds:
+
+sudo yum install gcc `downloads and installs GNU Compiler Collection (gcc) on Bastion Host for us to use redis-cli`
+wget http://download.redis.io/redis-stable.tar.gz `Download and compile the redis-cli utility`
+tar xvzf redis-stable.tar.gz
+cd redis-stable
+make
+Goto AWS Console > ElastiCache > Redis Clusters
+Select cluster > Details 
+Copy the primary endpoint excluding the <:port-number> `chatlyapp-server-default-redis.f0a2e1.ng.0001.use1.cache.amazonaws.com` and run the cmd below
+src/redis-cli -c -h chatlyapp-server-default-redis.f0a2e1.ng.0001.use1.cache.amazonaws.com -p 6379 `this takes us into our Redis ElastiCache server using cli`
+
+
+
 
 
 
